@@ -35,4 +35,39 @@ public interface IAnalysisService
     ValueTask<FindCallersResult> FindCallersAsync(
         FindCallersRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns outgoing calls for the callable symbol resolved at a source position.
+    /// </summary>
+    ValueTask<GetOutgoingCallsResult> GetOutgoingCallsAsync(
+        GetOutgoingCallsRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a validation summary for the loaded solution or a specific source file.
+    /// </summary>
+    ValueTask<ValidateCodeResult> ValidateCodeAsync(
+        ValidateCodeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a compound semantic analysis for the callable symbol resolved at a source position.
+    /// </summary>
+    ValueTask<AnalyzeMethodResult> AnalyzeMethodAsync(
+        AnalyzeMethodRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a best-effort semantic impact summary for the symbol resolved at a source position.
+    /// </summary>
+    ValueTask<AnalyzeChangeImpactResult> AnalyzeChangeImpactAsync(
+        AnalyzeChangeImpactRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a compatibility check between two resolved types.
+    /// </summary>
+    ValueTask<CheckTypeCompatibilityResult> CheckTypeCompatibilityAsync(
+        CheckTypeCompatibilityRequest request,
+        CancellationToken cancellationToken = default);
 }

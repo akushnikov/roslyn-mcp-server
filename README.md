@@ -35,12 +35,24 @@ The current implementation is focused on read-only Roslyn tooling for agent work
 
 - `get_document_outline`
   Returns a structural outline of a C# source file.
+- `get_file_overview`
+  Returns a compact overview of a source file, including its main declarations.
+- `get_type_overview`
+  Returns a compact overview of a resolved type.
+- `get_type_members`
+  Returns members declared on the resolved type.
 - `search_symbols`
   Searches source declarations across the loaded solution.
 - `get_symbol_info`
   Resolves semantic symbol information at a file position.
+- `get_symbol_attributes`
+  Returns attributes applied to the resolved symbol.
 - `go_to_definition`
   Returns source definition locations for the resolved symbol.
+- `get_method_signature`
+  Returns the signature of a callable member at a file position.
+- `get_method_source`
+  Returns the source body of a callable member at a file position.
 - `find_references`
   Finds source references for the resolved symbol.
 
@@ -48,12 +60,22 @@ The current implementation is focused on read-only Roslyn tooling for agent work
 
 - `get_diagnostics`
   Returns compiler diagnostics for a solution or a specific file.
+- `validate_code`
+  Returns a lightweight validity summary based on compiler diagnostics.
 - `find_implementations`
   Finds implementations of interfaces, abstract types, and virtual members.
 - `get_type_hierarchy`
   Returns base types, derived types, and interfaces for a resolved type.
 - `find_callers`
   Finds caller locations for callable symbols.
+- `get_outgoing_calls`
+  Returns outgoing call edges for a callable member.
+- `analyze_method`
+  Returns method-level data flow, control flow, signature, and outgoing call information.
+- `analyze_change_impact`
+  Returns a best-effort impact summary for a symbol, including references and implementations.
+- `check_type_compatibility`
+  Checks whether two resolved types are compatible.
 
 ## Workspace synchronization
 
@@ -66,7 +88,7 @@ It maintains a live workspace synchronization pipeline that:
 - reloads the workspace when project structure changes require it
 - ensures semantic queries use the current `Workspace.CurrentSolution`
 
-In practice, this means tools such as `find_references` and `get_diagnostics` can reflect edits made:
+In practice, this means tools such as `find_references`, `analyze_method`, and `get_diagnostics` can reflect edits made:
 
 - by the user in an IDE
 - by an agent through direct file edits

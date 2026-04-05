@@ -42,4 +42,46 @@ public interface INavigationService
     ValueTask<FindReferencesResult> FindReferencesAsync(
         FindReferencesRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns members for the type resolved at a source position.
+    /// </summary>
+    ValueTask<GetTypeMembersResult> GetTypeMembersAsync(
+        GetTypeMembersRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns signature details for the callable member resolved at a source position.
+    /// </summary>
+    ValueTask<GetMethodSignatureResult> GetMethodSignatureAsync(
+        GetMethodSignatureRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a compact overview for the type resolved at a source position.
+    /// </summary>
+    ValueTask<GetTypeOverviewResult> GetTypeOverviewAsync(
+        GetTypeOverviewRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a compact overview for a source file in the loaded solution.
+    /// </summary>
+    ValueTask<GetFileOverviewResult> GetFileOverviewAsync(
+        GetFileOverviewRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns source text for the callable member resolved at a source position.
+    /// </summary>
+    ValueTask<GetMethodSourceResult> GetMethodSourceAsync(
+        GetMethodSourceRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns attributes applied to the symbol resolved at a source position.
+    /// </summary>
+    ValueTask<GetSymbolAttributesResult> GetSymbolAttributesAsync(
+        GetSymbolAttributesRequest request,
+        CancellationToken cancellationToken = default);
 }

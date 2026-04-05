@@ -236,6 +236,269 @@ internal sealed class RoslynNavigationService(
         }
     }
 
+    public async ValueTask<GetTypeMembersResult> GetTypeMembersAsync(
+        GetTypeMembersRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resolved = await ResolveSymbolAsync(
+            request.SolutionPath,
+            request.FilePath,
+            request.Line,
+            request.Column,
+            cancellationToken);
+
+        if (resolved.FailureReason is not null)
+        {
+            return new GetTypeMembersResult(null, Array.Empty<TypeMemberDescriptor>(), resolved.FailureReason, resolved.Guidance);
+        }
+
+        var typeSymbol = resolved.Symbol switch
+        {
+            INamedTypeSymbol namedType => namedType,
+            ISymbol { ContainingType: not null } symbol => symbol.ContainingType,
+            _ => null
+        };
+
+        if (typeSymbol is null)
+        {
+            return new GetTypeMembersResult(
+                Type: MapSymbol(resolved.Symbol),
+                Members: Array.Empty<TypeMemberDescriptor>(),
+                FailureReason: "The resolved symbol does not belong to a named type.",
+                Guidance: "Use a type declaration or a member inside a named type.");
+        }
+
+        var members = typeSymbol.GetMembers()
+            .Where(static member => !member.IsImplicitlyDeclared)
+            .Select(MapTypeMember)
+            .Where(static member => member is not null)
+            .Cast<TypeMemberDescriptor>()
+            .OrderBy(static member => member.Kind, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static member => member.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new GetTypeMembersResult(MapSymbol(typeSymbol), members, null, null);
+    }
+
+    public async ValueTask<GetMethodSignatureResult> GetMethodSignatureAsync(
+        GetMethodSignatureRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resolved = await ResolveSymbolAsync(
+            request.SolutionPath,
+            request.FilePath,
+            request.Line,
+            request.Column,
+            cancellationToken);
+
+        if (resolved.FailureReason is not null)
+        {
+            return new GetMethodSignatureResult(null, resolved.FailureReason, resolved.Guidance);
+        }
+
+        var methodSymbol = resolved.Symbol switch
+        {
+            IMethodSymbol method => method,
+            IPropertySymbol property => CreatePropertyAccessorSignature(property),
+            IEventSymbol eventSymbol => CreateEventSignature(eventSymbol),
+            _ => null
+        };
+
+        if (methodSymbol is null)
+        {
+            return new GetMethodSignatureResult(
+                Signature: null,
+                FailureReason: "The resolved symbol is not a callable member.",
+                Guidance: "Use a method, constructor, local function, accessor, property, or event declaration.");
+        }
+
+        return new GetMethodSignatureResult(MapMethodSignature(methodSymbol), null, null);
+    }
+
+    public async ValueTask<GetTypeOverviewResult> GetTypeOverviewAsync(
+        GetTypeOverviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resolved = await ResolveSymbolAsync(
+            request.SolutionPath,
+            request.FilePath,
+            request.Line,
+            request.Column,
+            cancellationToken);
+
+        if (resolved.FailureReason is not null)
+        {
+            return new GetTypeOverviewResult(null, null, Array.Empty<SymbolDescriptor>(), Array.Empty<TypeMemberDescriptor>(), resolved.FailureReason, resolved.Guidance);
+        }
+
+        var typeSymbol = resolved.Symbol switch
+        {
+            INamedTypeSymbol namedType => namedType,
+            ISymbol { ContainingType: not null } symbol => symbol.ContainingType,
+            _ => null
+        };
+
+        if (typeSymbol is null)
+        {
+            return new GetTypeOverviewResult(
+                Type: MapSymbol(resolved.Symbol),
+                BaseType: null,
+                Interfaces: Array.Empty<SymbolDescriptor>(),
+                Members: Array.Empty<TypeMemberDescriptor>(),
+                FailureReason: "The resolved symbol does not belong to a named type.",
+                Guidance: "Use a type declaration or a member inside a named type.");
+        }
+
+        var members = typeSymbol.GetMembers()
+            .Where(static member => !member.IsImplicitlyDeclared)
+            .Select(MapTypeMember)
+            .Where(static member => member is not null)
+            .Cast<TypeMemberDescriptor>()
+            .OrderBy(static member => member.Kind, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static member => member.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var interfaces = typeSymbol.Interfaces
+            .Select(MapSymbol)
+            .Where(static symbol => symbol is not null)
+            .Cast<SymbolDescriptor>()
+            .ToArray();
+
+        return new GetTypeOverviewResult(
+            Type: MapSymbol(typeSymbol),
+            BaseType: MapSymbol(typeSymbol.BaseType),
+            Interfaces: interfaces,
+            Members: members,
+            FailureReason: null,
+            Guidance: null);
+    }
+
+    public async ValueTask<GetFileOverviewResult> GetFileOverviewAsync(
+        GetFileOverviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var session = await workspaceSessionProvider.GetReadySessionAsync(request.SolutionPath, cancellationToken);
+        if (session is null)
+        {
+            return new GetFileOverviewResult(null, Array.Empty<string>(), Array.Empty<FileTypeDescriptor>(), "The requested solution is not currently loaded.", "Call load_solution first for the requested solutionPath.");
+        }
+
+        var document = FindDocument(session, request.FilePath);
+        if (document is null)
+        {
+            return new GetFileOverviewResult(NormalizePath(request.FilePath), Array.Empty<string>(), Array.Empty<FileTypeDescriptor>(), "The requested file was not found in the loaded solution.", "Call get_project_structure with includeDocuments=true to inspect valid file paths.");
+        }
+
+        var root = await document.GetSyntaxRootAsync(cancellationToken);
+        if (root is not CompilationUnitSyntax compilationUnit)
+        {
+            return new GetFileOverviewResult(document.FilePath, Array.Empty<string>(), Array.Empty<FileTypeDescriptor>(), "The requested document does not have a C# compilation unit syntax tree.", "Use a C# source file that belongs to the loaded solution.");
+        }
+
+        var namespaces = compilationUnit.Members
+            .SelectMany(GetNamespaces)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var types = compilationUnit.DescendantNodes()
+            .OfType<BaseTypeDeclarationSyntax>()
+            .Select(MapFileType)
+            .Concat(compilationUnit.DescendantNodes().OfType<DelegateDeclarationSyntax>().Select(MapFileType))
+            .OrderBy(static type => type.Start.Line)
+            .ThenBy(static type => type.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new GetFileOverviewResult(document.FilePath, namespaces, types, null, null);
+    }
+
+    public async ValueTask<GetMethodSourceResult> GetMethodSourceAsync(
+        GetMethodSourceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resolved = await ResolveSymbolAsync(
+            request.SolutionPath,
+            request.FilePath,
+            request.Line,
+            request.Column,
+            cancellationToken);
+
+        if (resolved.FailureReason is not null)
+        {
+            return new GetMethodSourceResult(null, null, resolved.FailureReason, resolved.Guidance);
+        }
+
+        var methodSymbol = resolved.Symbol switch
+        {
+            IMethodSymbol method => method,
+            IPropertySymbol property => CreatePropertyAccessorSignature(property),
+            IEventSymbol eventSymbol => CreateEventSignature(eventSymbol),
+            _ => null
+        };
+
+        if (methodSymbol is null)
+        {
+            return new GetMethodSourceResult(null, null, "The resolved symbol is not a callable member.", "Use a method, constructor, local function, accessor, property, or event declaration.");
+        }
+
+        var declarationNode = await GetCallableDeclarationNodeAsync(methodSymbol, cancellationToken);
+        if (declarationNode is null || resolved.Document is null)
+        {
+            return new GetMethodSourceResult(MapMethodSignature(methodSymbol), null, "The resolved callable member does not have source syntax available.", "Use a callable member declared in a source document of the loaded solution.");
+        }
+
+        var sourceText = await resolved.Document.GetTextAsync(cancellationToken);
+        var span = declarationNode.GetLocation().GetLineSpan();
+        var text = sourceText.ToString(declarationNode.Span);
+
+        return new GetMethodSourceResult(
+            Signature: MapMethodSignature(methodSymbol),
+            Method: new MethodSourceDescriptor(
+                FilePath: resolved.Document.FilePath ?? NormalizePath(request.FilePath),
+                Start: new SymbolLocation(span.Path, span.StartLinePosition.Line + 1, span.StartLinePosition.Character + 1),
+                End: new SymbolLocation(span.Path, span.EndLinePosition.Line + 1, span.EndLinePosition.Character + 1),
+                Source: text),
+            FailureReason: null,
+            Guidance: null);
+    }
+
+    public async ValueTask<GetSymbolAttributesResult> GetSymbolAttributesAsync(
+        GetSymbolAttributesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resolved = await ResolveSymbolAsync(
+            request.SolutionPath,
+            request.FilePath,
+            request.Line,
+            request.Column,
+            cancellationToken);
+
+        if (resolved.FailureReason is not null)
+        {
+            return new GetSymbolAttributesResult(null, Array.Empty<SymbolAttributeDescriptor>(), resolved.FailureReason, resolved.Guidance);
+        }
+
+        var attributes = resolved.Symbol?
+            .GetAttributes()
+            .Select(MapAttribute)
+            .OrderBy(static attribute => attribute.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? Array.Empty<SymbolAttributeDescriptor>();
+
+        return new GetSymbolAttributesResult(MapSymbol(resolved.Symbol), attributes, null, null);
+    }
+
     private async ValueTask<ResolvedSymbol> ResolveSymbolAsync(
         string solutionPath,
         string filePath,
@@ -248,6 +511,7 @@ internal sealed class RoslynNavigationService(
         {
             return new ResolvedSymbol(
                 Session: null,
+                Document: null,
                 Symbol: null,
                 FailureReason: "The requested solution is not currently loaded.",
                 Guidance: "Call load_solution first for the requested solutionPath.");
@@ -258,6 +522,7 @@ internal sealed class RoslynNavigationService(
         {
             return new ResolvedSymbol(
                 Session: session,
+                Document: null,
                 Symbol: null,
                 FailureReason: "The requested file was not found in the loaded solution.",
                 Guidance: "Call get_project_structure with includeDocuments=true to inspect valid file paths.");
@@ -268,6 +533,7 @@ internal sealed class RoslynNavigationService(
         {
             return new ResolvedSymbol(
                 Session: session,
+                Document: document,
                 Symbol: null,
                 FailureReason: error,
                 Guidance: "Use 1-based line and column values within the requested file.");
@@ -279,6 +545,7 @@ internal sealed class RoslynNavigationService(
         {
             return new ResolvedSymbol(
                 Session: session,
+                Document: document,
                 Symbol: null,
                 FailureReason: "The requested document does not have semantic information available.",
                 Guidance: "Use a source document that belongs to a loaded C# project.");
@@ -289,12 +556,13 @@ internal sealed class RoslynNavigationService(
         {
             return new ResolvedSymbol(
                 Session: session,
+                Document: document,
                 Symbol: null,
                 FailureReason: "No symbol was resolved at the requested source position.",
                 Guidance: "Move the cursor onto a declaration or reference token and try again.");
         }
 
-        return new ResolvedSymbol(session, symbol, null, null);
+        return new ResolvedSymbol(session, document, symbol, null, null);
     }
 
     private static async ValueTask<SymbolReferenceDescriptor?> MapReferenceAsync(
@@ -589,6 +857,135 @@ internal sealed class RoslynNavigationService(
             Definition: GetSourceLocations(symbol).FirstOrDefault());
     }
 
+    private static TypeMemberDescriptor? MapTypeMember(ISymbol member)
+    {
+        var kind = GetSymbolKindName(member);
+        if (kind is null)
+        {
+            return null;
+        }
+
+        return new TypeMemberDescriptor(
+            Name: member.Name,
+            Kind: kind,
+            DisplayName: member.ToDisplayString(),
+            Accessibility: member.DeclaredAccessibility.ToString(),
+            IsStatic: member.IsStatic,
+            Definition: GetSourceLocations(member).FirstOrDefault());
+    }
+
+    private static MethodSignatureDescriptor MapMethodSignature(IMethodSymbol methodSymbol)
+    {
+        var kind = methodSymbol.MethodKind switch
+        {
+            MethodKind.Constructor or MethodKind.StaticConstructor => "Constructor",
+            MethodKind.Destructor => "Destructor",
+            MethodKind.LocalFunction => "LocalFunction",
+            MethodKind.PropertyGet => "PropertyGet",
+            MethodKind.PropertySet => "PropertySet",
+            MethodKind.EventAdd => "EventAdd",
+            MethodKind.EventRemove => "EventRemove",
+            MethodKind.UserDefinedOperator => "Operator",
+            MethodKind.Conversion => "Conversion",
+            _ => "Method"
+        };
+
+        return new MethodSignatureDescriptor(
+            Name: methodSymbol.Name,
+            Kind: kind,
+            DisplayName: methodSymbol.ToDisplayString(),
+            Accessibility: methodSymbol.DeclaredAccessibility.ToString(),
+            IsStatic: methodSymbol.IsStatic,
+            IsAsync: methodSymbol.IsAsync,
+            ReturnType: methodSymbol.MethodKind is MethodKind.Constructor or MethodKind.StaticConstructor or MethodKind.Destructor
+                ? null
+                : methodSymbol.ReturnType.ToDisplayString(),
+            ContainingType: methodSymbol.ContainingType?.ToDisplayString(),
+            Parameters: methodSymbol.Parameters.Select(MapParameter).ToArray(),
+            Definition: GetSourceLocations(methodSymbol).FirstOrDefault());
+    }
+
+    private static MethodParameterDescriptor MapParameter(IParameterSymbol parameter) =>
+        new(
+            Name: parameter.Name,
+            Type: parameter.Type.ToDisplayString(),
+            RefKind: parameter.RefKind.ToString(),
+            IsOptional: parameter.IsOptional,
+            DefaultValue: parameter.IsOptional && parameter.HasExplicitDefaultValue
+                ? parameter.ExplicitDefaultValue?.ToString() ?? "null"
+                : null);
+
+    private static IMethodSymbol? CreatePropertyAccessorSignature(IPropertySymbol propertySymbol) =>
+        propertySymbol.GetMethod ?? propertySymbol.SetMethod;
+
+    private static IMethodSymbol? CreateEventSignature(IEventSymbol eventSymbol) =>
+        eventSymbol.AddMethod ?? eventSymbol.RemoveMethod;
+
+    private static IEnumerable<string> GetNamespaces(MemberDeclarationSyntax member) =>
+        member switch
+        {
+            NamespaceDeclarationSyntax namespaceDeclaration => [namespaceDeclaration.Name.ToString()],
+            FileScopedNamespaceDeclarationSyntax fileScopedNamespace => [fileScopedNamespace.Name.ToString()],
+            _ => []
+        };
+
+    private static FileTypeDescriptor MapFileType(BaseTypeDeclarationSyntax typeDeclaration)
+    {
+        var lineSpan = typeDeclaration.GetLocation().GetLineSpan();
+        var memberCount = typeDeclaration is TypeDeclarationSyntax typeSyntax
+            ? typeSyntax.Members.Count
+            : typeDeclaration is EnumDeclarationSyntax enumSyntax
+                ? enumSyntax.Members.Count
+                : 0;
+
+        return new FileTypeDescriptor(
+            Name: typeDeclaration.Identifier.Text,
+            Kind: GetBaseTypeKind(typeDeclaration),
+            Start: new SymbolLocation(typeDeclaration.SyntaxTree.FilePath, lineSpan.StartLinePosition.Line + 1, lineSpan.StartLinePosition.Character + 1),
+            MemberCount: memberCount);
+    }
+
+    private static FileTypeDescriptor MapFileType(DelegateDeclarationSyntax delegateDeclaration)
+    {
+        var lineSpan = delegateDeclaration.GetLocation().GetLineSpan();
+        return new FileTypeDescriptor(
+            Name: delegateDeclaration.Identifier.Text,
+            Kind: "Delegate",
+            Start: new SymbolLocation(delegateDeclaration.SyntaxTree.FilePath, lineSpan.StartLinePosition.Line + 1, lineSpan.StartLinePosition.Character + 1),
+            MemberCount: 0);
+    }
+
+    private static SymbolAttributeDescriptor MapAttribute(AttributeData attribute) =>
+        new(
+            Name: attribute.AttributeClass?.Name ?? attribute.ToString() ?? "Attribute",
+            DisplayName: attribute.AttributeClass?.ToDisplayString() ?? attribute.ToString() ?? "Attribute",
+            ConstructorArguments: attribute.ConstructorArguments.Select(FormatTypedConstant).ToArray(),
+            NamedArguments: attribute.NamedArguments.Select(static argument => $"{argument.Key} = {FormatTypedConstant(argument.Value)}").ToArray());
+
+    private static string FormatTypedConstant(TypedConstant constant) =>
+        constant.IsNull
+            ? "null"
+            : constant.Kind == TypedConstantKind.Array
+                ? $"[{string.Join(", ", constant.Values.Select(FormatTypedConstant))}]"
+                : constant.Value?.ToString() ?? constant.ToString() ?? string.Empty;
+
+    private static async ValueTask<SyntaxNode?> GetCallableDeclarationNodeAsync(
+        IMethodSymbol methodSymbol,
+        CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in methodSymbol.DeclaringSyntaxReferences)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (await syntaxReference.GetSyntaxAsync(cancellationToken) is SyntaxNode syntaxNode)
+            {
+                return syntaxNode;
+            }
+        }
+
+        return null;
+    }
+
     private static string? GetContainerName(ISymbol symbol)
     {
         if (symbol.ContainingType is not null)
@@ -625,6 +1022,7 @@ internal sealed class RoslynNavigationService(
 
     private sealed record ResolvedSymbol(
         RoslynWorkspaceSession? Session,
+        Document? Document,
         ISymbol? Symbol,
         string? FailureReason,
         string? Guidance);
