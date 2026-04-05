@@ -1,0 +1,1 @@
+This file exists only to exercise unsupported workspace path handling.

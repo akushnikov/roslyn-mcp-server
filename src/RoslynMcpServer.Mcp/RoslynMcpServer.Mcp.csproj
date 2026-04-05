@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RoslynMcpServer.Abstractions\RoslynMcpServer.Abstractions.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Application\RoslynMcpServer.Application.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Domain\RoslynMcpServer.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>

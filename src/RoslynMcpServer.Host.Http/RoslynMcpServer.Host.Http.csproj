@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>RoslynMcpServer.Host.Http</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RoslynMcpServer.Application\RoslynMcpServer.Application.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Infrastructure\RoslynMcpServer.Infrastructure.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Infrastructure.Roslyn\RoslynMcpServer.Infrastructure.Roslyn.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Mcp\RoslynMcpServer.Mcp.csproj" />
+  </ItemGroup>
+</Project>

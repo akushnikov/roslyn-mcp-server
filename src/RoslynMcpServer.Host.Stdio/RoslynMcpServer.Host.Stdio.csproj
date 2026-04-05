@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>roslyn-mcp-server</ToolCommandName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RoslynMcpServer.Application\RoslynMcpServer.Application.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Infrastructure\RoslynMcpServer.Infrastructure.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Infrastructure.Roslyn\RoslynMcpServer.Infrastructure.Roslyn.csproj" />
+    <ProjectReference Include="..\RoslynMcpServer.Mcp\RoslynMcpServer.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>
