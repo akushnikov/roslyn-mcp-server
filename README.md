@@ -139,7 +139,7 @@ Refactoring, code generation, preview/apply workflows, and other mutating tools 
 
 This project was informed by ideas and implementation patterns from:
 
-- [SharpLens MCP](https://github.com/ampangborn/sharplens-mcp)
+- [SharpLens MCP](https://github.com/pzalutski-pixel/sharplens-mcp)
 - [JoshuaRamirez/RoslynMcpServer](https://github.com/JoshuaRamirez/RoslynMcpServer)
 
 These references were especially useful for tool inventory planning, Roslyn-first workflows, and MCP server ergonomics.
