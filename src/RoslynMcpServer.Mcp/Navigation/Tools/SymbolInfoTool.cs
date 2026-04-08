@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns semantic symbol information for a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class SymbolInfoTool(INavigationService navigationService)
+internal sealed class SymbolInfoTool(ISymbolInfoQueryService symbolInfoQueryService)
 {
     /// <summary>
     /// Resolves the symbol at the requested file position and returns its semantic metadata.
@@ -23,7 +23,7 @@ internal sealed class SymbolInfoTool(INavigationService navigationService)
         [Description("1-based line number of the target symbol location.")] int line,
         [Description("1-based column number of the target symbol location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetSymbolInfoAsync(
+        => symbolInfoQueryService.GetSymbolInfoAsync(
             new GetSymbolInfoRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }

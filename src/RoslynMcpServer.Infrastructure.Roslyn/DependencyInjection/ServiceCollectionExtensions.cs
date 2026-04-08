@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<WorkspaceStateTracker>();
         services.AddTransient<ExpectedExternalChangeStore>();
         services.AddTransient<WorkspacePathIndex>();
+        services.AddSingleton<ISymbolInfoQueryDataProvider, RoslynSymbolInfoQueryDataProvider>();
         services.AddSingleton<INavigationService, RoslynNavigationService>();
         services.AddSingleton<IAnalysisService, RoslynAnalysisService>();
         services.AddSingleton<IRuntimeEnvironmentService, RuntimeEnvironmentService>();

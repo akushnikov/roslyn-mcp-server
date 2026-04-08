@@ -54,6 +54,7 @@ ScaffoldingReadMe.txt
 
 # Local agent/tooling state
 .ai/
+.planning/
 
 # Temporary files
 ~$*

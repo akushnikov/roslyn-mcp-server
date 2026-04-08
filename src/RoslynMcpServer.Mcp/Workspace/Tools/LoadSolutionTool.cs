@@ -13,7 +13,7 @@ namespace RoslynMcpServer.Mcp.Workspace.Tools;
 /// Loads a solution or project into the server-side workspace cache.
 /// </summary>
 [McpServerToolType]
-internal sealed class LoadSolutionTool(IWorkspaceLoader workspaceLoader)
+internal sealed class LoadSolutionTool(ILoadSolutionCommandService commandService)
 {
     /// <summary>
     /// Loads the requested solution or project into cache for later read-only operations.
@@ -25,7 +25,7 @@ internal sealed class LoadSolutionTool(IWorkspaceLoader workspaceLoader)
         [Description("When true, forces a full reload even if the solution is already cached.")] bool forceReload = false,
         IProgress<ProgressNotificationValue>? progress = null,
         CancellationToken cancellationToken = default)
-        => workspaceLoader.LoadAsync(
+        => commandService.LoadSolutionAsync(
             new LoadSolutionRequest(solutionPath, forceReload),
             progress is null ? null : new WorkspaceLoadProgressReporter(progress),
             cancellationToken);
