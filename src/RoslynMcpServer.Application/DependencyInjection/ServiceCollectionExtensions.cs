@@ -7,6 +7,7 @@ using RoslynMcpServer.Application.Infrastructure;
 using RoslynMcpServer.Application.Navigation;
 using RoslynMcpServer.Application.Navigation.Operations;
 using RoslynMcpServer.Application.Server;
+using RoslynMcpServer.Application.Telemetry;
 using RoslynMcpServer.Application.Workspace;
 using RoslynMcpServer.Application.Workspace.Operations;
 

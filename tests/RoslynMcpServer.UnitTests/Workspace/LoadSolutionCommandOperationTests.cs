@@ -37,7 +37,7 @@ public sealed class LoadSolutionCommandOperationTests
             Snapshot = null
         };
 
-        var operation = new LoadSolutionCommandOperation(loader, cache);
+        var operation = new LoadSolutionCommandOperation(loader, cache, Microsoft.Extensions.Logging.Abstractions.NullLogger<LoadSolutionCommandOperation>.Instance);
         var result = await operation.ExecuteAsync(
             new LoadSolutionCommandRequest(
                 new LoadSolutionRequest(@"C:\repo\Sample.sln", ForceReload: false),
@@ -81,7 +81,7 @@ public sealed class LoadSolutionCommandOperationTests
             Snapshot = new LoadedWorkspaceSnapshot(beforeWorkspace, Array.Empty<ProjectStructureDescriptor>())
         };
 
-        var operation = new LoadSolutionCommandOperation(loader, cache);
+        var operation = new LoadSolutionCommandOperation(loader, cache, Microsoft.Extensions.Logging.Abstractions.NullLogger<LoadSolutionCommandOperation>.Instance);
         var result = await operation.ExecuteAsync(
             new LoadSolutionCommandRequest(
                 new LoadSolutionRequest(@"C:\repo\Sample.sln", ForceReload: false),
@@ -100,7 +100,10 @@ public sealed class LoadSolutionCommandOperationTests
     [Fact]
     public async Task ExecuteAsync_ReturnsValidationError_WhenSolutionPathMissing()
     {
-        var operation = new LoadSolutionCommandOperation(new TestWorkspaceLoader(), new TestWorkspaceCache());
+        var operation = new LoadSolutionCommandOperation(
+            new TestWorkspaceLoader(),
+            new TestWorkspaceCache(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<LoadSolutionCommandOperation>.Instance);
 
         var result = await operation.ExecuteAsync(
             new LoadSolutionCommandRequest(
@@ -120,7 +123,10 @@ public sealed class LoadSolutionCommandOperationTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        var operation = new LoadSolutionCommandOperation(new TestWorkspaceLoader(), new TestWorkspaceCache());
+        var operation = new LoadSolutionCommandOperation(
+            new TestWorkspaceLoader(),
+            new TestWorkspaceCache(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<LoadSolutionCommandOperation>.Instance);
 
         var result = await operation.ExecuteAsync(
             new LoadSolutionCommandRequest(

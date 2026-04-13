@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using OneOf;
 using RoslynMcpServer.Abstractions.Navigation.Requests;
 using RoslynMcpServer.Abstractions.Navigation.Results;
@@ -86,7 +87,7 @@ public sealed class SymbolInfoQueryOperationTests
     }
 
     private static SymbolInfoQueryOperation CreateOperation(TestSymbolInfoQueryDataProvider provider) =>
-        new(provider);
+        new(provider, NullLogger<SymbolInfoQueryOperation>.Instance);
 
     private static GetSymbolInfoRequest CreateValidRequest() =>
         new(

@@ -71,6 +71,11 @@ public sealed class CommandOperationBaseTests
 
     private sealed class TestCommandOperation : CommandOperationBase<TestRequest, TestResult, CommandError>
     {
+        public TestCommandOperation()
+            : base(Microsoft.Extensions.Logging.Abstractions.NullLogger<TestCommandOperation>.Instance)
+        {
+        }
+
         public List<string> StageCalls { get; } = [];
 
         public Exception? CoreException { get; set; }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OneOf;
 using OneOf.Types;
 using RoslynMcpServer.Abstractions.Navigation.Requests;
@@ -12,7 +13,8 @@ namespace RoslynMcpServer.Application.Navigation.Operations;
 /// Executes the symbol-info query through the shared query pipeline.
 /// </summary>
 public sealed class SymbolInfoQueryOperation(
-    ISymbolInfoQueryDataProvider dataProvider) : QueryOperationBase<GetSymbolInfoRequest, GetSymbolInfoResult, QueryError>
+    ISymbolInfoQueryDataProvider dataProvider,
+    ILogger<SymbolInfoQueryOperation> logger) : QueryOperationBase<GetSymbolInfoRequest, GetSymbolInfoResult, QueryError>(logger)
 {
     protected override async ValueTask<OneOf<Success<GetSymbolInfoResult>, Error<QueryError>, Canceled>> ExecuteCoreAsync(
         GetSymbolInfoRequest request,

@@ -1,7 +1,9 @@
 using OneOf;
 using OneOf.Types;
+using Microsoft.Extensions.Logging;
 using RoslynMcpServer.Abstractions.CommandPipeline.Models;
 using RoslynMcpServer.Abstractions.CommandPipeline.Services;
+using RoslynMcpServer.Application.Telemetry;
 
 namespace RoslynMcpServer.Application.CommandPipeline;
 
@@ -14,6 +16,15 @@ namespace RoslynMcpServer.Application.CommandPipeline;
 public abstract class CommandOperationBase<TRequest, TResult, TError> : ICommandOperation<TRequest, TResult, TError>
     where TRequest : notnull
 {
+    private readonly ILogger _logger;
+    private readonly string _operationName;
+
+    protected CommandOperationBase(ILogger logger)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _operationName = $"{GetType().FullName}.ExecuteAsync";
+    }
+
     /// <summary>
     /// Executes the command pipeline with cancellation checks, validation,
     /// core execution, and centralized unhandled error mapping.
@@ -23,28 +34,36 @@ public abstract class CommandOperationBase<TRequest, TResult, TError> : ICommand
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var telemetryState = OperationTelemetryScope.Start(_operationName);
+
         if (cancellationToken.IsCancellationRequested)
         {
-            return new Canceled();
+            return Complete(new Canceled(), telemetryState);
         }
 
         var validationFailure = Validate(request);
         if (validationFailure is not null)
         {
-            return (Error<TError>)validationFailure;
+            return Complete((Error<TError>)validationFailure, telemetryState);
         }
 
         try
         {
-            return await ExecuteCoreAsync(request, cancellationToken);
+            var result = await ExecuteCoreAsync(request, cancellationToken);
+            return Complete(result, telemetryState);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            return new Canceled();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Complete(new Canceled(), telemetryState);
+            }
+
+            throw;
         }
         catch (Exception exception)
         {
-            return MapUnhandledError(request, exception);
+            return Complete(MapUnhandledError(request, exception), telemetryState, exception);
         }
     }
 
@@ -66,4 +85,18 @@ public abstract class CommandOperationBase<TRequest, TResult, TError> : ICommand
     protected abstract Error<TError> MapUnhandledError(
         TRequest request,
         Exception exception);
+
+    private OneOf<Success<TResult>, Error<TError>, Canceled> Complete(
+        OneOf<Success<TResult>, Error<TError>, Canceled> result,
+        OperationTelemetryScope.State telemetryState,
+        Exception? exception = null)
+    {
+        var outcome = result.Match(
+            _ => "success",
+            _ => "error",
+            _ => "canceled");
+
+        OperationTelemetryScope.Complete(_logger, telemetryState, outcome, exception);
+        return result;
+    }
 }

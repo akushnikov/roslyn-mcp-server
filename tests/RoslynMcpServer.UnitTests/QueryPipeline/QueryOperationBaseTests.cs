@@ -101,6 +101,11 @@ public sealed class QueryOperationBaseTests
 
     private sealed class TestQueryOperation : QueryOperationBase<TestRequest, TestResult, QueryError>
     {
+        public TestQueryOperation()
+            : base(Microsoft.Extensions.Logging.Abstractions.NullLogger<TestQueryOperation>.Instance)
+        {
+        }
+
         public List<string> StageCalls { get; } = [];
 
         public Exception? CoreException { get; set; }

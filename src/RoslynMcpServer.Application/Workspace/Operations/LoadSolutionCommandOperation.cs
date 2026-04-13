@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OneOf;
 using OneOf.Types;
 using RoslynMcpServer.Abstractions.CommandPipeline.Models;
@@ -14,7 +15,8 @@ namespace RoslynMcpServer.Application.Workspace.Operations;
 /// </summary>
 public sealed class LoadSolutionCommandOperation(
     IWorkspaceLoader workspaceLoader,
-    IWorkspaceCache workspaceCache) : CommandOperationBase<LoadSolutionCommandRequest, LoadSolutionCommandResult, CommandError>
+    IWorkspaceCache workspaceCache,
+    ILogger<LoadSolutionCommandOperation> logger) : CommandOperationBase<LoadSolutionCommandRequest, LoadSolutionCommandResult, CommandError>(logger)
 {
     protected override async ValueTask<OneOf<Success<LoadSolutionCommandResult>, Error<CommandError>, Canceled>> ExecuteCoreAsync(
         LoadSolutionCommandRequest request,
