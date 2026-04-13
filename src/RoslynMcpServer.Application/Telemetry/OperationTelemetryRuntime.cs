@@ -11,18 +11,22 @@ public static class OperationTelemetryRuntime
     /// <summary>
     /// Activity source used for operation-level tracing.
     /// </summary>
-    public static ActivitySource ActivitySource { get; } = new("RoslynMcpServer.Application.OperationPipeline", "1.0.0");
+    public static ActivitySource ActivitySource { get; } = new(
+        OperationTelemetryConventions.ActivitySourceName,
+        OperationTelemetryConventions.ActivitySourceVersion);
 
     /// <summary>
     /// Meter used for operation-level metrics.
     /// </summary>
-    public static Meter Meter { get; } = new("RoslynMcpServer.Application.OperationPipeline", "1.0.0");
+    public static Meter Meter { get; } = new(
+        OperationTelemetryConventions.MeterName,
+        OperationTelemetryConventions.MeterVersion);
 
     /// <summary>
     /// Duration metric for operation executions in milliseconds.
     /// </summary>
     public static Histogram<double> DurationMs { get; } = Meter.CreateHistogram<double>(
-        "roslyn_mcp.operation.duration",
-        unit: "ms",
-        description: "Operation pipeline execution duration.");
+        OperationTelemetryConventions.DurationMetricName,
+        unit: OperationTelemetryConventions.DurationMetricUnit,
+        description: OperationTelemetryConventions.DurationMetricDescription);
 }

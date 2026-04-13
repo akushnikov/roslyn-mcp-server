@@ -4,6 +4,8 @@ using RoslynMcpServer.Abstractions.Workspace.Results;
 using RoslynMcpServer.Abstractions.Workspace.Services;
 using RoslynMcpServer.Application.Workspace.Operations;
 
+using RoslynMcpServer.Abstractions.CommandPipeline.Models;
+
 namespace RoslynMcpServer.Application.Workspace;
 
 /// <summary>
@@ -23,34 +25,44 @@ internal sealed class LoadSolutionCommandService(
             cancellationToken);
 
         return result.Match(
-            success => success.Value.Result,
-            error => new LoadSolutionResult(
-                Workspace: null,
-                WasAlreadyLoaded: false,
-                WasReloaded: request.ForceReload,
-                Diagnostics:
-                [
-                    new WorkspaceOperationDiagnostic(
-                        WorkspaceDiagnosticSeverity.Error,
-                        "WorkspaceLoadFailed",
-                        error.Value.FailureReason,
-                        request.SolutionPath)
-                ],
-                FailureReason: error.Value.FailureReason,
-                Guidance: error.Value.Guidance),
-            _ => new LoadSolutionResult(
-                Workspace: null,
-                WasAlreadyLoaded: false,
-                WasReloaded: request.ForceReload,
-                Diagnostics:
-                [
-                    new WorkspaceOperationDiagnostic(
-                        WorkspaceDiagnosticSeverity.Warning,
-                        "OperationCanceled",
-                        "Workspace loading was canceled.",
-                        request.SolutionPath)
-                ],
-                FailureReason: "Workspace loading was canceled.",
-                Guidance: "Retry the request when the operation can run to completion."));
+            static success => success.Value.Result,
+            error => FromFailure(request, error.Value),
+            _ => FromCanceled(request));
+    }
+
+    private static LoadSolutionResult FromFailure(LoadSolutionRequest request, CommandError error)
+    {
+        return new LoadSolutionResult(
+            Workspace: null,
+            WasAlreadyLoaded: false,
+            WasReloaded: request.ForceReload,
+            Diagnostics:
+            [
+                new WorkspaceOperationDiagnostic(
+                    WorkspaceDiagnosticSeverity.Error,
+                    "WorkspaceLoadFailed",
+                    error.FailureReason,
+                    request.SolutionPath)
+            ],
+            FailureReason: error.FailureReason,
+            Guidance: error.Guidance);
+    }
+
+    private static LoadSolutionResult FromCanceled(LoadSolutionRequest request)
+    {
+        return new LoadSolutionResult(
+            Workspace: null,
+            WasAlreadyLoaded: false,
+            WasReloaded: request.ForceReload,
+            Diagnostics:
+            [
+                new WorkspaceOperationDiagnostic(
+                    WorkspaceDiagnosticSeverity.Warning,
+                    "OperationCanceled",
+                    "Workspace loading was canceled.",
+                    request.SolutionPath)
+            ],
+            FailureReason: "Workspace loading was canceled.",
+            Guidance: "Retry the request when the operation can run to completion.");
     }
 }

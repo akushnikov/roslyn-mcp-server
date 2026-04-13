@@ -28,20 +28,22 @@ internal static class OperationTelemetryScope
         var durationMs = state.Stopwatch.Elapsed.TotalMilliseconds;
         var tags = new TagList
         {
-            { "operation", state.OperationName },
-            { "outcome", outcome }
+            { OperationTelemetryConventions.MetricTagOperation, state.OperationName },
+            { OperationTelemetryConventions.MetricTagOutcome, outcome }
         };
 
         OperationTelemetryRuntime.DurationMs.Record(durationMs, tags);
 
-        state.Activity?.SetTag("operation.name", state.OperationName);
-        state.Activity?.SetTag("operation.duration.ms", durationMs);
-        state.Activity?.SetTag("operation.outcome", outcome);
-        state.Activity?.SetTag("operation.canceled", string.Equals(outcome, "canceled", StringComparison.Ordinal));
-        state.Activity?.SetTag("operation.exception", exception is not null);
+        state.Activity?.SetTag(OperationTelemetryConventions.ActivityTagOperationName, state.OperationName);
+        state.Activity?.SetTag(OperationTelemetryConventions.ActivityTagDurationMs, durationMs);
+        state.Activity?.SetTag(OperationTelemetryConventions.ActivityTagOutcome, outcome);
+        state.Activity?.SetTag(
+            OperationTelemetryConventions.ActivityTagCanceled,
+            string.Equals(outcome, OperationTelemetryConventions.OutcomeCanceled, StringComparison.Ordinal));
+        state.Activity?.SetTag(OperationTelemetryConventions.ActivityTagException, exception is not null);
         if (exception is not null)
         {
-            state.Activity?.SetTag("operation.exception.type", exception.GetType().FullName);
+            state.Activity?.SetTag(OperationTelemetryConventions.ActivityTagExceptionType, exception.GetType().FullName);
         }
 
         state.Activity?.Stop();

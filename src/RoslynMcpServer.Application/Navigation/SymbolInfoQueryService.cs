@@ -3,6 +3,8 @@ using RoslynMcpServer.Abstractions.Navigation.Results;
 using RoslynMcpServer.Abstractions.Navigation.Services;
 using RoslynMcpServer.Application.Navigation.Operations;
 
+using RoslynMcpServer.Abstractions.QueryPipeline.Models;
+
 namespace RoslynMcpServer.Application.Navigation;
 
 /// <summary>
@@ -19,14 +21,24 @@ internal sealed class SymbolInfoQueryService(
         var result = await operation.ExecuteAsync(request, cancellationToken);
 
         return result.Match(
-            success => success.Value, 
-            error => new GetSymbolInfoResult(
-                Symbol: null, 
-                FailureReason: error.Value.FailureReason, 
-                Guidance: error.Value.Guidance),
-            _ => new GetSymbolInfoResult(
-                Symbol: null,
-                FailureReason: "The operation was canceled.",
-                Guidance: "Retry the request when the operation can run to completion."));
+            static success => success.Value,
+            static error => FromFailure(error.Value),
+            static _ => FromCanceled());
+    }
+
+    private static GetSymbolInfoResult FromFailure(QueryError error)
+    {
+        return new GetSymbolInfoResult(
+            Symbol: null,
+            FailureReason: error.FailureReason,
+            Guidance: error.Guidance);
+    }
+
+    private static GetSymbolInfoResult FromCanceled()
+    {
+        return new GetSymbolInfoResult(
+            Symbol: null,
+            FailureReason: "The operation was canceled.",
+            Guidance: "Retry the request when the operation can run to completion.");
     }
 }

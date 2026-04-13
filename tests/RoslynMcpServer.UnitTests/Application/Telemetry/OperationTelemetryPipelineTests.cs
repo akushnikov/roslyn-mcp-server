@@ -9,6 +9,7 @@ using QueryCanceled = RoslynMcpServer.Abstractions.QueryPipeline.Models.Canceled
 using RoslynMcpServer.Abstractions.QueryPipeline.Models;
 using RoslynMcpServer.Application.CommandPipeline;
 using RoslynMcpServer.Application.QueryPipeline;
+
 using RoslynMcpServer.Application.Telemetry;
 
 namespace RoslynMcpServer.UnitTests.Application.Telemetry;
@@ -34,13 +35,19 @@ public sealed class OperationTelemetryPipelineTests
         Assert.Equal(LogLevel.Debug, entry.LogLevel);
         Assert.Contains("finished with success", entry.Message, StringComparison.Ordinal);
 
-        var activity = Assert.Single(activityCapture.CompletedActivities);
-        Assert.Equal("success", GetStringTag(activity, "operation.outcome"));
-        Assert.Equal(false, GetBoolTag(activity, "operation.exception"));
+        var activity = Assert.Single(
+            activityCapture.CompletedActivities,
+            static activity => activity.DisplayName.Contains("OperationTelemetryPipelineTests", StringComparison.Ordinal));
+        Assert.Equal(OperationTelemetryConventions.OutcomeSuccess, GetStringTag(activity, OperationTelemetryConventions.ActivityTagOutcome));
+        Assert.Equal(false, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagException));
+        Assert.Equal(false, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagCanceled));
 
         var measurement = Assert.Single(meterCapture.Measurements);
         Assert.True(measurement.Value >= 0);
-        Assert.Contains(measurement.Tags, static tag => tag.Key == "outcome" && Equals(tag.Value, "success"));
+        Assert.Contains(
+            measurement.Tags,
+            static tag => tag.Key == OperationTelemetryConventions.MetricTagOutcome &&
+                          Equals(tag.Value, OperationTelemetryConventions.OutcomeSuccess));
     }
 
     [Fact]
@@ -62,14 +69,17 @@ public sealed class OperationTelemetryPipelineTests
         Assert.IsType<InvalidOperationException>(entry.Exception);
         Assert.Contains("finished with error", entry.Message, StringComparison.Ordinal);
 
-        var activity = Assert.Single(activityCapture.CompletedActivities);
-        Assert.Equal("error", GetStringTag(activity, "operation.outcome"));
-        Assert.Equal(typeof(InvalidOperationException).FullName, GetStringTag(activity, "operation.exception.type"));
+        var activity = Assert.Single(
+            activityCapture.CompletedActivities,
+            static activity => activity.DisplayName.Contains("OperationTelemetryPipelineTests", StringComparison.Ordinal));
+        Assert.Equal(OperationTelemetryConventions.OutcomeError, GetStringTag(activity, OperationTelemetryConventions.ActivityTagOutcome));
+        Assert.Equal(typeof(InvalidOperationException).FullName, GetStringTag(activity, OperationTelemetryConventions.ActivityTagExceptionType));
     }
 
     [Fact]
     public async Task CommandPipeline_EmitsCanceledLogWithoutException()
     {
+        using var activityCapture = new ActivityCapture();
         var logger = new ListLogger<SuccessCommandOperation>();
         var operation = new SuccessCommandOperation(logger);
         using var cts = new CancellationTokenSource();
@@ -86,6 +96,13 @@ public sealed class OperationTelemetryPipelineTests
         Assert.Equal(LogLevel.Debug, entry.LogLevel);
         Assert.Null(entry.Exception);
         Assert.Contains("finished with canceled", entry.Message, StringComparison.Ordinal);
+
+        var activity = Assert.Single(
+            activityCapture.CompletedActivities,
+            static activity => activity.DisplayName.Contains("OperationTelemetryPipelineTests", StringComparison.Ordinal));
+        Assert.Equal(OperationTelemetryConventions.OutcomeCanceled, GetStringTag(activity, OperationTelemetryConventions.ActivityTagOutcome));
+        Assert.Equal(true, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagCanceled));
+        Assert.Equal(false, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagException));
     }
 
     private sealed record QueryRequest(string Value);

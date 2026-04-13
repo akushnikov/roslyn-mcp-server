@@ -92,9 +92,9 @@ public abstract class CommandOperationBase<TRequest, TResult, TError> : ICommand
         Exception? exception = null)
     {
         var outcome = result.Match(
-            _ => "success",
-            _ => "error",
-            _ => "canceled");
+            _ => OperationTelemetryConventions.OutcomeSuccess,
+            _ => OperationTelemetryConventions.OutcomeError,
+            _ => OperationTelemetryConventions.OutcomeCanceled);
 
         OperationTelemetryScope.Complete(_logger, telemetryState, outcome, exception);
         return result;
