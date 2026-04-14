@@ -21,8 +21,11 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IServerInfoService, ServerInfoService>();
         services.AddSingleton<IServerDiagnosticsService, ServerDiagnosticsService>();
+        services.AddSingleton<ResolveWorkspaceContextQueryOperation>();
         services.AddSingleton<IWorkspaceContextResolver, WorkspaceContextResolver>();
+        services.AddSingleton<WorkspaceStateQueryOperation>();
         services.AddSingleton<IWorkspaceStateService, WorkspaceStateService>();
+        services.AddSingleton<ProjectStructureQueryOperation>();
         services.AddSingleton<IProjectStructureService, ProjectStructureService>();
         services.AddSingleton<LoadSolutionCommandOperation>();
         services.AddSingleton<ILoadSolutionCommandService, LoadSolutionCommandService>();
