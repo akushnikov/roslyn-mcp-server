@@ -1,10 +1,10 @@
+using RoslynMcpServer.Abstractions.CommandPipeline.Models;
 using RoslynMcpServer.Abstractions.Workspace.Models;
 using RoslynMcpServer.Abstractions.Workspace.Requests;
 using RoslynMcpServer.Abstractions.Workspace.Results;
 using RoslynMcpServer.Abstractions.Workspace.Services;
+using RoslynMcpServer.Application.CommandPipeline;
 using RoslynMcpServer.Application.Workspace.Operations;
-
-using RoslynMcpServer.Abstractions.CommandPipeline.Models;
 
 namespace RoslynMcpServer.Application.Workspace;
 
@@ -24,10 +24,11 @@ internal sealed class LoadSolutionCommandService(
             new LoadSolutionCommandRequest(request, progress),
             cancellationToken);
 
-        return result.Match(
-            static success => success.Value.Result,
-            error => FromFailure(request, error.Value),
-            _ => FromCanceled(request));
+        return CommandResultMapper.Map(
+            result,
+            static success => success.Result,
+            error => FromFailure(request, error),
+            () => FromCanceled(request));
     }
 
     private static LoadSolutionResult FromFailure(LoadSolutionRequest request, CommandError error)
@@ -35,7 +36,7 @@ internal sealed class LoadSolutionCommandService(
         return new LoadSolutionResult(
             Workspace: null,
             WasAlreadyLoaded: false,
-            WasReloaded: request.ForceReload,
+            WasReloaded: false,           // reload did not complete
             Diagnostics:
             [
                 new WorkspaceOperationDiagnostic(
@@ -53,7 +54,7 @@ internal sealed class LoadSolutionCommandService(
         return new LoadSolutionResult(
             Workspace: null,
             WasAlreadyLoaded: false,
-            WasReloaded: request.ForceReload,
+            WasReloaded: false,           // reload did not complete
             Diagnostics:
             [
                 new WorkspaceOperationDiagnostic(

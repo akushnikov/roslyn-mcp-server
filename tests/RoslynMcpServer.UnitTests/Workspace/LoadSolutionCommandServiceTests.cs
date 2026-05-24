@@ -11,6 +11,38 @@ namespace RoslynMcpServer.UnitTests.Workspace;
 public sealed class LoadSolutionCommandServiceTests
 {
     [Fact]
+    public async Task LoadSolutionAsync_PassesThroughSuccessResult_Unchanged()
+    {
+        var workspace = new WorkspaceDescriptor(
+            SolutionPath: @"C:\repo\Sample.sln",
+            SolutionName: "Sample",
+            LoadedAtUtc: DateTimeOffset.UtcNow,
+            ProjectCount: 2,
+            DocumentCount: 10);
+
+        var successResult = new LoadSolutionResult(
+            Workspace: workspace,
+            WasAlreadyLoaded: false,
+            WasReloaded: false,
+            Diagnostics: Array.Empty<WorkspaceOperationDiagnostic>(),
+            FailureReason: null,
+            Guidance: null);
+
+        var service = CreateService(
+            new TestWorkspaceLoader { NextResult = successResult },
+            new TestWorkspaceCache());
+
+        var result = await service.LoadSolutionAsync(new LoadSolutionRequest(@"C:\repo\Sample.sln", ForceReload: false));
+
+        Assert.Equal(workspace, result.Workspace);
+        Assert.False(result.WasAlreadyLoaded);
+        Assert.False(result.WasReloaded);
+        Assert.Empty(result.Diagnostics);
+        Assert.Null(result.FailureReason);
+        Assert.Null(result.Guidance);
+    }
+
+    [Fact]
     public async Task LoadSolutionAsync_MapsCanceledResult_ToWarningDiagnostic()
     {
         using var cts = new CancellationTokenSource();
@@ -25,7 +57,7 @@ public sealed class LoadSolutionCommandServiceTests
 
         Assert.Null(result.Workspace);
         Assert.False(result.WasAlreadyLoaded);
-        Assert.True(result.WasReloaded);
+        Assert.False(result.WasReloaded);  // reload did not complete
         Assert.Equal("Workspace loading was canceled.", result.FailureReason);
         Assert.Equal("Retry the request when the operation can run to completion.", result.Guidance);
 

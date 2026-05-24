@@ -25,7 +25,7 @@ public sealed class LoadSolutionCommandOperation(
         var targetPath = request.LoadRequest.SolutionPath;
         var normalizedPath = TryNormalizePath(targetPath);
 
-        var beforeSnapshot = await TryGetSnapshotAsync(targetPath, cancellationToken);
+        var beforeSnapshot = await TryGetSnapshotAsync(normalizedPath ?? targetPath, cancellationToken);
         var beforeVersion = GetWorkspaceVersion(beforeSnapshot?.Workspace.LoadedAtUtc);
 
         var result = await workspaceLoader.LoadAsync(
@@ -96,7 +96,7 @@ public sealed class LoadSolutionCommandOperation(
         }
         catch
         {
-            return rawPath;
+            return null;   // do not pass raw path as if it were normalized
         }
     }
 
