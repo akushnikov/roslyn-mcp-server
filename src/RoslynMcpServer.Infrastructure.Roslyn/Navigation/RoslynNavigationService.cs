@@ -557,10 +557,6 @@ internal sealed class RoslynNavigationService(
             _ => declaration.Kind().ToString()
         };
 
-    private static bool MatchesKindFilter(SymbolDescriptor descriptor, string? kindFilter) =>
-        string.IsNullOrWhiteSpace(kindFilter) ||
-        descriptor.Kind.Equals(kindFilter, StringComparison.OrdinalIgnoreCase);
-
     private static Document? FindDocument(RoslynWorkspaceSession session, string filePath)
     {
         var normalizedPath = NormalizePath(filePath);
