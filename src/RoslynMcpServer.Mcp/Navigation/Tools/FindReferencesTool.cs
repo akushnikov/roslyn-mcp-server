@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns source references for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class FindReferencesTool(INavigationService navigationService)
+internal sealed class FindReferencesTool(IFindReferencesQueryService findReferencesQueryService)
 {
     /// <summary>
     /// Finds references for the symbol resolved at the requested file position.
@@ -24,7 +24,7 @@ internal sealed class FindReferencesTool(INavigationService navigationService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of references to return.")] int maxResults = 100,
         CancellationToken cancellationToken = default)
-        => navigationService.FindReferencesAsync(
+        => findReferencesQueryService.FindReferencesAsync(
             new FindReferencesRequest(solutionPath, filePath, line, column, maxResults),
             cancellationToken);
 }
