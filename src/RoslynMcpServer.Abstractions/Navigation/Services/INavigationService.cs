@@ -16,31 +16,10 @@ public interface INavigationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Searches source declarations across a loaded solution.
-    /// </summary>
-    ValueTask<SearchSymbolsResult> SearchSymbolsAsync(
-        SearchSymbolsRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Returns semantic information for the symbol resolved at a source position.
     /// </summary>
     ValueTask<GetSymbolInfoResult> GetSymbolInfoAsync(
         GetSymbolInfoRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns source definition locations for the symbol resolved at a source position.
-    /// </summary>
-    ValueTask<GoToDefinitionResult> GoToDefinitionAsync(
-        GoToDefinitionRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns source references for the symbol resolved at a source position.
-    /// </summary>
-    ValueTask<FindReferencesResult> FindReferencesAsync(
-        FindReferencesRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

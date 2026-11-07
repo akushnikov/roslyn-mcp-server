@@ -1,9 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.Extensions.Logging;
 using RoslynMcpServer.Abstractions.Navigation.Models;
 using RoslynMcpServer.Abstractions.Navigation.Requests;
 using RoslynMcpServer.Abstractions.Navigation.Results;
@@ -16,8 +14,7 @@ namespace RoslynMcpServer.Infrastructure.Roslyn.Navigation;
 /// Implements read-only semantic navigation over loaded Roslyn solutions.
 /// </summary>
 internal sealed class RoslynNavigationService(
-    IWorkspaceSessionProvider workspaceSessionProvider,
-    ILogger<RoslynNavigationService> logger) : INavigationService
+    IWorkspaceSessionProvider workspaceSessionProvider) : INavigationService
 {
     public async ValueTask<GetDocumentOutlineResult> GetDocumentOutlineAsync(
         GetDocumentOutlineRequest request,
@@ -62,48 +59,6 @@ internal sealed class RoslynNavigationService(
             Guidance: null);
     }
 
-    public async ValueTask<SearchSymbolsResult> SearchSymbolsAsync(
-        SearchSymbolsRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return new SearchSymbolsResult(
-                Symbols: Array.Empty<SymbolDescriptor>(),
-                FailureReason: "A non-empty query is required.",
-                Guidance: "Pass part of a symbol name and optionally a kindFilter.");
-        }
-
-        var session = await workspaceSessionProvider.GetReadySessionAsync(request.SolutionPath, cancellationToken);
-        if (session is null)
-        {
-            return new SearchSymbolsResult(
-                Symbols: Array.Empty<SymbolDescriptor>(),
-                FailureReason: "The requested solution is not currently loaded.",
-                Guidance: "Call load_solution first for the requested solutionPath.");
-        }
-
-        var symbols = await SymbolFinder.FindSourceDeclarationsAsync(
-            session.Solution,
-            name => name.Contains(request.Query, StringComparison.OrdinalIgnoreCase),
-            SymbolFilter.TypeAndMember,
-            cancellationToken);
-
-        var results = symbols
-            .Select(MapSymbol)
-            .Where(static descriptor => descriptor is not null)
-            .Cast<SymbolDescriptor>()
-            .Where(descriptor => MatchesKindFilter(descriptor, request.KindFilter))
-            .OrderBy(static descriptor => descriptor.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(static descriptor => descriptor.ContainerName, StringComparer.OrdinalIgnoreCase)
-            .Take(NormalizeMaxResults(request.MaxResults))
-            .ToArray();
-
-        return new SearchSymbolsResult(results, null, null);
-    }
-
     public async ValueTask<GetSymbolInfoResult> GetSymbolInfoAsync(
         GetSymbolInfoRequest request,
         CancellationToken cancellationToken = default)
@@ -123,117 +78,6 @@ internal sealed class RoslynNavigationService(
         }
 
         return new GetSymbolInfoResult(MapSymbol(resolved.Symbol), null, null);
-    }
-
-    public async ValueTask<GoToDefinitionResult> GoToDefinitionAsync(
-        GoToDefinitionRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var resolved = await ResolveSymbolAsync(
-            request.SolutionPath,
-            request.FilePath,
-            request.Line,
-            request.Column,
-            cancellationToken);
-
-        if (resolved.FailureReason is not null)
-        {
-            return new GoToDefinitionResult(null, Array.Empty<SymbolLocation>(), resolved.FailureReason, resolved.Guidance);
-        }
-
-        if (resolved.Symbol is null)
-        {
-            return new GoToDefinitionResult(
-                Symbol: null,
-                Definitions: Array.Empty<SymbolLocation>(),
-                FailureReason: "No symbol was resolved at the requested source position.",
-                Guidance: "Move the cursor onto a declaration or reference token and try again.");
-        }
-
-        var definitions = GetSourceLocations(resolved.Symbol).ToArray();
-        if (definitions.Length == 0)
-        {
-            return new GoToDefinitionResult(
-                Symbol: MapSymbol(resolved.Symbol),
-                Definitions: Array.Empty<SymbolLocation>(),
-                FailureReason: "No source definition was found for the resolved symbol.",
-                Guidance: "The symbol may come from metadata or generated code outside the loaded solution.");
-        }
-
-        return new GoToDefinitionResult(MapSymbol(resolved.Symbol), definitions, null, null);
-    }
-
-    public async ValueTask<FindReferencesResult> FindReferencesAsync(
-        FindReferencesRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var resolved = await ResolveSymbolAsync(
-            request.SolutionPath,
-            request.FilePath,
-            request.Line,
-            request.Column,
-            cancellationToken);
-
-        if (resolved.FailureReason is not null)
-        {
-            return new FindReferencesResult(null, Array.Empty<SymbolReferenceDescriptor>(), resolved.FailureReason, resolved.Guidance);
-        }
-
-        try
-        {
-            if (resolved.Symbol is null || resolved.Session is null)
-            {
-                return new FindReferencesResult(
-                    Symbol: null,
-                    References: Array.Empty<SymbolReferenceDescriptor>(),
-                    FailureReason: "No symbol was resolved at the requested source position.",
-                    Guidance: "Move the cursor onto a declaration or reference token and try again.");
-            }
-
-            var referencedSymbols = await SymbolFinder.FindReferencesAsync(
-                resolved.Symbol,
-                resolved.Session.Solution,
-                cancellationToken);
-
-            var maxResults = NormalizeMaxResults(request.MaxResults);
-            var references = new List<SymbolReferenceDescriptor>(Math.Min(maxResults, 64));
-
-            foreach (var referencedSymbol in referencedSymbols)
-            {
-                foreach (var location in referencedSymbol.Locations)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var descriptor = await MapReferenceAsync(location, cancellationToken);
-                    if (descriptor is null)
-                    {
-                        continue;
-                    }
-
-                    references.Add(descriptor);
-                    if (references.Count >= maxResults)
-                    {
-                        return new FindReferencesResult(MapSymbol(resolved.Symbol), references, null, null);
-                    }
-                }
-            }
-
-            return new FindReferencesResult(MapSymbol(resolved.Symbol), references, null, null);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Failed to find references for {FilePath}:{Line}:{Column}", request.FilePath, request.Line, request.Column);
-
-            return new FindReferencesResult(
-                Symbol: MapSymbol(resolved.Symbol),
-                References: Array.Empty<SymbolReferenceDescriptor>(),
-                FailureReason: "The server could not compute references for the resolved symbol.",
-                Guidance: "Retry the request and confirm the file position resolves to a source symbol.");
-        }
     }
 
     public async ValueTask<GetTypeMembersResult> GetTypeMembersAsync(
@@ -565,31 +409,6 @@ internal sealed class RoslynNavigationService(
         return new ResolvedSymbol(session, document, symbol, null, null);
     }
 
-    private static async ValueTask<SymbolReferenceDescriptor?> MapReferenceAsync(
-        ReferenceLocation location,
-        CancellationToken cancellationToken)
-    {
-        var lineSpan = location.Location.GetLineSpan();
-        var sourceTree = location.Location.SourceTree;
-        var sourceText = sourceTree is null
-            ? null
-            : await sourceTree.GetTextAsync(cancellationToken);
-
-        string? lineText = null;
-        if (sourceText is not null && lineSpan.StartLinePosition.Line < sourceText.Lines.Count)
-        {
-            lineText = sourceText.Lines[lineSpan.StartLinePosition.Line].ToString().Trim();
-        }
-
-        return new SymbolReferenceDescriptor(
-            Location: new SymbolLocation(
-                location.Document.FilePath,
-                lineSpan.StartLinePosition.Line + 1,
-                lineSpan.StartLinePosition.Character + 1),
-            ContainingSymbol: null,
-            LineText: lineText);
-    }
-
     private static IReadOnlyList<DocumentOutlineNode> BuildOutline(SyntaxList<MemberDeclarationSyntax> members)
     {
         var result = new List<DocumentOutlineNode>();
@@ -741,11 +560,6 @@ internal sealed class RoslynNavigationService(
     private static bool MatchesKindFilter(SymbolDescriptor descriptor, string? kindFilter) =>
         string.IsNullOrWhiteSpace(kindFilter) ||
         descriptor.Kind.Equals(kindFilter, StringComparison.OrdinalIgnoreCase);
-
-    private static int NormalizeMaxResults(int maxResults) =>
-        maxResults <= 0
-            ? 50
-            : Math.Min(maxResults, 200);
 
     private static Document? FindDocument(RoslynWorkspaceSession session, string filePath)
     {
