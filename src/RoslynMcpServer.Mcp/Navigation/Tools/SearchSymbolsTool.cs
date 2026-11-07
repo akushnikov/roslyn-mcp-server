@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Searches source declarations across a previously loaded solution.
 /// </summary>
 [McpServerToolType]
-internal sealed class SearchSymbolsTool(INavigationService navigationService)
+internal sealed class SearchSymbolsTool(ISearchSymbolsQueryService searchSymbolsQueryService)
 {
     /// <summary>
     /// Searches source declarations by name and optional symbol kind.
@@ -23,7 +23,7 @@ internal sealed class SearchSymbolsTool(INavigationService navigationService)
         [Description("Optional symbol kind filter such as Class, Interface, Method, Property, Field, Event, or Constant.")] string? kindFilter = null,
         [Description("Maximum number of symbols to return.")] int maxResults = 50,
         CancellationToken cancellationToken = default)
-        => navigationService.SearchSymbolsAsync(
+        => searchSymbolsQueryService.SearchSymbolsAsync(
             new SearchSymbolsRequest(solutionPath, query, kindFilter, maxResults),
             cancellationToken);
 }

@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SymbolResolutionHelper>();
         services.AddSingleton<IGoToDefinitionQueryDataProvider, RoslynGoToDefinitionQueryDataProvider>();
         services.AddSingleton<IFindReferencesQueryDataProvider, RoslynFindReferencesQueryDataProvider>();
+        services.AddSingleton<ISearchSymbolsQueryDataProvider, RoslynSearchSymbolsQueryDataProvider>();
         services.AddSingleton<INavigationService, RoslynNavigationService>();
         services.AddSingleton<IAnalysisService, RoslynAnalysisService>();
         services.AddSingleton<IRuntimeEnvironmentService, RuntimeEnvironmentService>();
