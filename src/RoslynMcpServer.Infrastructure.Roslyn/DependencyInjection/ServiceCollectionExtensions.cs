@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<WorkspacePathIndex>();
         services.AddSingleton<ISymbolInfoQueryDataProvider, RoslynSymbolInfoQueryDataProvider>();
         services.AddSingleton<SymbolResolutionHelper>();
+        services.AddSingleton<IGoToDefinitionQueryDataProvider, RoslynGoToDefinitionQueryDataProvider>();
         services.AddSingleton<INavigationService, RoslynNavigationService>();
         services.AddSingleton<IAnalysisService, RoslynAnalysisService>();
         services.AddSingleton<IRuntimeEnvironmentService, RuntimeEnvironmentService>();

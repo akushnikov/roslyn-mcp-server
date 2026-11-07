@@ -31,6 +31,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ILoadSolutionCommandService, LoadSolutionCommandService>();
         services.AddSingleton<SymbolInfoQueryOperation>();
         services.AddSingleton<ISymbolInfoQueryService, SymbolInfoQueryService>();
+        services.AddSingleton<GoToDefinitionQueryOperation>();
+        services.AddSingleton<IGoToDefinitionQueryService, GoToDefinitionQueryService>();
         return services;
     }
 }

@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns source definition locations for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class GoToDefinitionTool(INavigationService navigationService)
+internal sealed class GoToDefinitionTool(IGoToDefinitionQueryService goToDefinitionQueryService)
 {
     /// <summary>
     /// Resolves source definition locations for the symbol at the requested file position.
@@ -23,7 +23,7 @@ internal sealed class GoToDefinitionTool(INavigationService navigationService)
         [Description("1-based line number of the target symbol location.")] int line,
         [Description("1-based column number of the target symbol location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GoToDefinitionAsync(
+        => goToDefinitionQueryService.GoToDefinitionAsync(
             new GoToDefinitionRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
