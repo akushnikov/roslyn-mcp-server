@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.Logging;
@@ -42,7 +43,12 @@ public sealed class OperationTelemetryPipelineTests
         Assert.Equal(false, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagException));
         Assert.Equal(false, GetBoolTag(activity, OperationTelemetryConventions.ActivityTagCanceled));
 
-        var measurement = Assert.Single(meterCapture.Measurements);
+        var measurement = Assert.Single(
+            meterCapture.Measurements,
+            static measurement => measurement.Tags.Any(static tag =>
+                tag.Key == OperationTelemetryConventions.MetricTagOperation &&
+                tag.Value is string operationName &&
+                operationName.Contains(nameof(OperationTelemetryPipelineTests), StringComparison.Ordinal)));
         Assert.True(measurement.Value >= 0);
         Assert.Contains(
             measurement.Tags,
@@ -167,13 +173,13 @@ public sealed class OperationTelemetryPipelineTests
             {
                 ShouldListenTo = static source => source.Name == "RoslynMcpServer.Application.OperationPipeline",
                 Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-                ActivityStopped = activity => CompletedActivities.Add(activity)
+                ActivityStopped = activity => CompletedActivities.Enqueue(activity)
             };
 
             ActivitySource.AddActivityListener(_listener);
         }
 
-        public List<Activity> CompletedActivities { get; } = [];
+        public ConcurrentQueue<Activity> CompletedActivities { get; } = new();
 
         public void Dispose() => _listener.Dispose();
     }
@@ -195,13 +201,13 @@ public sealed class OperationTelemetryPipelineTests
 
             _listener.SetMeasurementEventCallback<double>((instrument, measurement, tags, _) =>
             {
-                Measurements.Add(new MeasurementRecord(measurement, tags.ToArray()));
+                Measurements.Enqueue(new MeasurementRecord(measurement, tags.ToArray()));
             });
 
             _listener.Start();
         }
 
-        public List<MeasurementRecord> Measurements { get; } = [];
+        public ConcurrentQueue<MeasurementRecord> Measurements { get; } = new();
 
         public void Dispose() => _listener.Dispose();
     }
