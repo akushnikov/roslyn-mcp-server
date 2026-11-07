@@ -11,6 +11,28 @@ namespace RoslynMcpServer.UnitTests.Navigation;
 public sealed class FindReferencesQueryServiceTests
 {
     [Fact]
+    public async Task FindReferencesAsync_PreservesResolvedSymbol_WhenProviderReturnsFailure()
+    {
+        var symbol = new SymbolDescriptor("Sample", "Class", "Sample", null, new SymbolLocation("File.cs", 1, 14));
+        var expected = new FindReferencesResult(
+            symbol,
+            Array.Empty<SymbolReferenceDescriptor>(),
+            "The server could not compute references for the resolved symbol.",
+            "Retry the request and confirm the file position resolves to a source symbol.");
+        var service = new FindReferencesQueryService(
+            new FindReferencesQueryOperation(
+                new TestFindReferencesQueryDataProvider { NextResult = expected },
+                NullLogger<FindReferencesQueryOperation>.Instance));
+
+        var result = await service.FindReferencesAsync(CreateValidRequest());
+
+        Assert.Same(symbol, result.Symbol);
+        Assert.Empty(result.References);
+        Assert.Equal(expected.FailureReason, result.FailureReason);
+        Assert.Equal(expected.Guidance, result.Guidance);
+    }
+
+    [Fact]
     public async Task FindReferencesAsync_MapsCanceledResult_ToStableCancellationPayload()
     {
         using var cts = new CancellationTokenSource();

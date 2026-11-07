@@ -24,7 +24,7 @@ public sealed class GoToDefinitionQueryService(
             result,
             static success => success,
             static error => new GoToDefinitionResult(
-                Symbol: null,
+                Symbol: error.Symbol,
                 Definitions: Array.Empty<SymbolLocation>(),
                 FailureReason: error.FailureReason,
                 Guidance: error.Guidance),

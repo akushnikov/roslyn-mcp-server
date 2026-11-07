@@ -11,6 +11,26 @@ namespace RoslynMcpServer.UnitTests.Navigation;
 public sealed class GoToDefinitionQueryOperationTests
 {
     [Fact]
+    public async Task ExecuteAsync_PreservesResolvedSymbol_InErrorBranch()
+    {
+        var symbol = new SymbolDescriptor("WriteLine", "Method", "System.Console.WriteLine()", "System.Console", null);
+        var provider = new TestGoToDefinitionQueryDataProvider
+        {
+            NextResult = new GoToDefinitionResult(symbol, Array.Empty<SymbolLocation>(), "No source definition.", "Inspect metadata.")
+        };
+
+        var result = await CreateOperation(provider).ExecuteAsync(CreateValidRequest());
+        var (success, error, canceled) = result;
+
+        Assert.Null(success);
+        Assert.Null(canceled);
+        Assert.NotNull(error);
+        Assert.Same(symbol, error.Value.Value.Symbol);
+        Assert.Equal("No source definition.", error.Value.Value.FailureReason);
+        Assert.Equal("Inspect metadata.", error.Value.Value.Guidance);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ReturnsProviderResult_OnSuccess()
     {
         var expected = new GoToDefinitionResult(

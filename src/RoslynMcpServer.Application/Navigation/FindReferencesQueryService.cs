@@ -24,7 +24,7 @@ public sealed class FindReferencesQueryService(
             result,
             static success => success,
             static error => new FindReferencesResult(
-                Symbol: null,
+                Symbol: error.Symbol,
                 References: Array.Empty<SymbolReferenceDescriptor>(),
                 FailureReason: error.FailureReason,
                 Guidance: error.Guidance),

@@ -20,6 +20,7 @@ internal sealed class RoslynFindReferencesQueryDataProvider(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        SymbolDescriptor? resolvedSymbol = null;
 
         try
         {
@@ -39,6 +40,7 @@ internal sealed class RoslynFindReferencesQueryDataProvider(
                     Guidance: resolved.Guidance);
             }
 
+            resolvedSymbol = SymbolResolutionHelper.MapSymbol(resolved.Symbol);
             var referencedSymbols = await SymbolFinder.FindReferencesAsync(
                 resolved.Symbol!,
                 resolved.Session!.Solution,
@@ -63,13 +65,13 @@ internal sealed class RoslynFindReferencesQueryDataProvider(
                     if (references.Count >= maxResults)
                     {
                         return new FindReferencesResult(
-                            SymbolResolutionHelper.MapSymbol(resolved.Symbol), references, null, null);
+                            resolvedSymbol, references, null, null);
                     }
                 }
             }
 
             return new FindReferencesResult(
-                SymbolResolutionHelper.MapSymbol(resolved.Symbol), references, null, null);
+                resolvedSymbol, references, null, null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -85,7 +87,7 @@ internal sealed class RoslynFindReferencesQueryDataProvider(
                 request.Column);
 
             return new FindReferencesResult(
-                Symbol: null,
+                Symbol: resolvedSymbol,
                 References: Array.Empty<SymbolReferenceDescriptor>(),
                 FailureReason: "The server could not compute references for the resolved symbol.",
                 Guidance: "Retry the request and confirm the file position resolves to a source symbol.");

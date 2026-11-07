@@ -11,6 +11,26 @@ namespace RoslynMcpServer.UnitTests.Navigation;
 public sealed class FindReferencesQueryOperationTests
 {
     [Fact]
+    public async Task ExecuteAsync_PreservesResolvedSymbol_InErrorBranch()
+    {
+        var symbol = new SymbolDescriptor("Sample", "Class", "Sample", null, new SymbolLocation("File.cs", 1, 14));
+        var provider = new TestFindReferencesQueryDataProvider
+        {
+            NextResult = new FindReferencesResult(symbol, Array.Empty<SymbolReferenceDescriptor>(), "Reference lookup failed.", "Retry.")
+        };
+
+        var result = await CreateOperation(provider).ExecuteAsync(CreateValidRequest());
+        var (success, error, canceled) = result;
+
+        Assert.Null(success);
+        Assert.Null(canceled);
+        Assert.NotNull(error);
+        Assert.Same(symbol, error.Value.Value.Symbol);
+        Assert.Equal("Reference lookup failed.", error.Value.Value.FailureReason);
+        Assert.Equal("Retry.", error.Value.Value.Guidance);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ReturnsProviderResult_OnSuccess()
     {
         var expected = new FindReferencesResult(

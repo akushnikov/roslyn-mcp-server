@@ -11,6 +11,28 @@ namespace RoslynMcpServer.UnitTests.Navigation;
 public sealed class GoToDefinitionQueryServiceTests
 {
     [Fact]
+    public async Task GoToDefinitionAsync_PreservesResolvedSymbol_WhenNoSourceDefinitionExists()
+    {
+        var symbol = new SymbolDescriptor("WriteLine", "Method", "System.Console.WriteLine()", "System.Console", null);
+        var expected = new GoToDefinitionResult(
+            symbol,
+            Array.Empty<SymbolLocation>(),
+            "No source definition was found for the resolved symbol.",
+            "The symbol may come from metadata or generated code outside the loaded solution.");
+        var service = new GoToDefinitionQueryService(
+            new GoToDefinitionQueryOperation(
+                new TestGoToDefinitionQueryDataProvider { NextResult = expected },
+                NullLogger<GoToDefinitionQueryOperation>.Instance));
+
+        var result = await service.GoToDefinitionAsync(CreateValidRequest());
+
+        Assert.Same(symbol, result.Symbol);
+        Assert.Empty(result.Definitions);
+        Assert.Equal(expected.FailureReason, result.FailureReason);
+        Assert.Equal(expected.Guidance, result.Guidance);
+    }
+
+    [Fact]
     public async Task GoToDefinitionAsync_MapsCanceledResult_ToStableCancellationPayload()
     {
         using var cts = new CancellationTokenSource();

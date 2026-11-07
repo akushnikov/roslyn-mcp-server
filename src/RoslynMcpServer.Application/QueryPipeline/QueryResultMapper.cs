@@ -6,10 +6,10 @@ namespace RoslynMcpServer.Application.QueryPipeline;
 
 internal static class QueryResultMapper
 {
-    public static TContract Map<TResult, TContract>(
-        OneOf<Success<TResult>, Error<QueryError>, Canceled> result,
+    public static TContract Map<TResult, TError, TContract>(
+        OneOf<Success<TResult>, Error<TError>, Canceled> result,
         Func<TResult, TContract> fromSuccess,
-        Func<QueryError, TContract> fromFailure,
+        Func<TError, TContract> fromFailure,
         Func<TContract> fromCanceled)
         => result.Match(
             success => fromSuccess(success.Value),
