@@ -82,6 +82,7 @@ public sealed class WorkspaceSyncIntegrationTests
             await using var provider = CreateProvider();
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
             var navigationService = provider.GetRequiredService<INavigationService>();
+            var findReferencesQueryService = provider.GetRequiredService<IFindReferencesQueryService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
 
@@ -131,7 +132,7 @@ public sealed class WorkspaceSyncIntegrationTests
                 var symbolInfo = await navigationService.GetSymbolInfoAsync(
                     new GetSymbolInfoRequest(fixture.SolutionPath, messagePath, Line: 3, Column: 22));
 
-                var references = await navigationService.FindReferencesAsync(
+                var references = await findReferencesQueryService.FindReferencesAsync(
                     new FindReferencesRequest(fixture.SolutionPath, messagePath, Line: 3, Column: 22));
 
                 return string.Equals(symbolInfo.Symbol?.Name, "MessagePayload", StringComparison.Ordinal) &&
@@ -154,7 +155,7 @@ public sealed class WorkspaceSyncIntegrationTests
             await using var provider = CreateProvider();
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
             var projectStructureService = provider.GetRequiredService<IProjectStructureService>();
-            var navigationService = provider.GetRequiredService<INavigationService>();
+            var searchSymbolsQueryService = provider.GetRequiredService<ISearchSymbolsQueryService>();
             var analysisService = provider.GetRequiredService<IAnalysisService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
@@ -184,7 +185,7 @@ public sealed class WorkspaceSyncIntegrationTests
                     return false;
                 }
 
-                var symbols = await navigationService.SearchSymbolsAsync(
+                var symbols = await searchSymbolsQueryService.SearchSymbolsAsync(
                     new SearchSymbolsRequest(fixture.SolutionPath, "NewFeature", "Class", MaxResults: 10));
 
                 if (!symbols.Symbols.Any(static symbol => symbol.Name == "NewFeature"))
