@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns outgoing calls for the callable member resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class OutgoingCallsTool(IAnalysisService analysisService)
+internal sealed class OutgoingCallsTool(IOutgoingCallsQueryService queryService)
 {
     /// <summary>
     /// Resolves the callable member at the requested file position and returns its outgoing calls.
@@ -24,7 +24,7 @@ internal sealed class OutgoingCallsTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of outgoing calls to return.")] int maxResults = 100,
         CancellationToken cancellationToken = default)
-        => analysisService.GetOutgoingCallsAsync(
+        => queryService.GetOutgoingCallsAsync(
             new GetOutgoingCallsRequest(solutionPath, filePath, line, column, maxResults),
             cancellationToken);
 }
