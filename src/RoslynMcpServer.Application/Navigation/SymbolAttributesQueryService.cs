@@ -7,7 +7,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects SymbolAttributes pipeline outcomes into the public result contract.</summary>
+/// <summary>Projects attribute query outcomes while retaining symbol context and distinct cancellation.</summary>
 public sealed class SymbolAttributesQueryService(SymbolAttributesQueryOperation operation) : ISymbolAttributesQueryService
 {
     /// <inheritdoc />

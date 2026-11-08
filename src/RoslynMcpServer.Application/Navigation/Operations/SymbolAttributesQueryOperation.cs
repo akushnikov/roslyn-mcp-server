@@ -10,7 +10,9 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the SymbolAttributes query through the shared query pipeline.</summary>
+/// <summary>
+/// Validates source coordinates before retrieving attributes and preserves resolved-symbol context on failure.
+/// </summary>
 public sealed class SymbolAttributesQueryOperation(
     ISymbolAttributesQueryDataProvider dataProvider,
     ILogger<SymbolAttributesQueryOperation> logger) : QueryOperationBase<GetSymbolAttributesRequest, GetSymbolAttributesResult, NavigationQueryError>(logger)
