@@ -7,7 +7,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects MethodSource pipeline outcomes into the public result contract.</summary>
+/// <summary>Projects method-source outcomes, preserving signatures on errors and cancellation as a distinct outcome.</summary>
 public sealed class MethodSourceQueryService(MethodSourceQueryOperation operation) : IMethodSourceQueryService
 {
     /// <inheritdoc />

@@ -10,7 +10,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the MethodSource query through the shared query pipeline.</summary>
+/// <summary>Validates source positions and promotes provider failures while retaining the resolved signature.</summary>
 public sealed class MethodSourceQueryOperation(
     IMethodSourceQueryDataProvider dataProvider,
     ILogger<MethodSourceQueryOperation> logger) : QueryOperationBase<GetMethodSourceRequest, GetMethodSourceResult, MethodSourceQueryError>(logger)
