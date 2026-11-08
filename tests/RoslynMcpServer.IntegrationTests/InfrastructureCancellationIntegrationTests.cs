@@ -50,7 +50,20 @@ public sealed class InfrastructureCancellationIntegrationTests
             File.WriteAllText(release, "release");
             if (File.Exists(entered))
                 await WaitForFileAsync(exited);
-            Directory.Delete(directory, recursive: true);
+            var cleanupDeadline = DateTime.UtcNow.AddSeconds(10);
+            while (true)
+            {
+                try
+                {
+                    Directory.Delete(directory, recursive: true);
+                    break;
+                }
+                catch (IOException) when (DateTime.UtcNow < cleanupDeadline)
+                {
+                    // Creation of the marker can precede the child closing its file handle.
+                    await Task.Delay(10);
+                }
+            }
         }
     }
 
