@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns a compact overview for the type resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class TypeOverviewTool(INavigationService navigationService)
+internal sealed class TypeOverviewTool(ITypeOverviewQueryService typeOverviewQueryService)
 {
     /// <summary>
     /// Resolves the type at the requested file position and returns base types, interfaces, and member summaries.
@@ -23,7 +23,7 @@ internal sealed class TypeOverviewTool(INavigationService navigationService)
         [Description("1-based line number of the target type or member location.")] int line,
         [Description("1-based column number of the target type or member location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetTypeOverviewAsync(
+        => typeOverviewQueryService.GetTypeOverviewAsync(
             new GetTypeOverviewRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
