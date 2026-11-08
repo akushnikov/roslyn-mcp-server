@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\RoslynMcpServer.Application\RoslynMcpServer.Application.csproj" />
     <ProjectReference Include="..\..\src\RoslynMcpServer.Domain\RoslynMcpServer.Domain.csproj" />
     <ProjectReference Include="..\..\src\RoslynMcpServer.Infrastructure.Roslyn\RoslynMcpServer.Infrastructure.Roslyn.csproj" />
+    <ProjectReference Include="..\..\src\RoslynMcpServer.Infrastructure\RoslynMcpServer.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

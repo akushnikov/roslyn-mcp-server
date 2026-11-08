@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using RoslynMcpServer.Abstractions.Server.Services;
 using RoslynMcpServer.Application.DependencyInjection;
+using RoslynMcpServer.Application.Server;
 using RoslynMcpServer.Infrastructure.Roslyn.DependencyInjection;
+using RoslynMcpServer.Infrastructure.Server;
 
 namespace RoslynMcpServer.Infrastructure.DependencyInjection;
 
@@ -18,6 +21,8 @@ public static class ServiceCollectionExtensions
 
         services.AddRoslynMcpServerApplication();
         services.AddRoslynMcpServerRoslynInfrastructure();
+        services.AddSingleton<IServerInfoQueryDataProvider>(_ => new ServerInfoQueryDataProvider(
+            typeof(ServerInfoQueryService).Assembly.GetName().Version?.ToString() ?? "0.1.0"));
         return services;
     }
 }

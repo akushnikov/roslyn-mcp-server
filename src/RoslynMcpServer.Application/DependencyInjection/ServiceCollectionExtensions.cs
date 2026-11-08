@@ -7,9 +7,11 @@ using RoslynMcpServer.Abstractions.Navigation.Services;
 using RoslynMcpServer.Abstractions.Server.Services;
 using RoslynMcpServer.Abstractions.Workspace.Services;
 using RoslynMcpServer.Application.Infrastructure;
+using RoslynMcpServer.Application.Infrastructure.Operations;
 using RoslynMcpServer.Application.Navigation;
 using RoslynMcpServer.Application.Navigation.Operations;
 using RoslynMcpServer.Application.Server;
+using RoslynMcpServer.Application.Server.Operations;
 using RoslynMcpServer.Application.Telemetry;
 using RoslynMcpServer.Application.Workspace;
 using RoslynMcpServer.Application.Workspace.Operations;
@@ -24,6 +26,10 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IServerInfoService, ServerInfoService>();
         services.AddSingleton<IServerDiagnosticsService, ServerDiagnosticsService>();
+        services.AddSingleton<ServerInfoQueryOperation>();
+        services.AddSingleton<IServerInfoQueryService, ServerInfoQueryService>();
+        services.AddSingleton<DiagnoseQueryOperation>();
+        services.AddSingleton<IDiagnoseQueryService, DiagnoseQueryService>();
         services.AddSingleton<ResolveWorkspaceContextQueryOperation>();
         services.AddSingleton<IWorkspaceContextResolver, WorkspaceContextResolver>();
         services.AddSingleton<WorkspaceStateQueryOperation>();
