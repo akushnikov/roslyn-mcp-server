@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns a best-effort semantic impact summary for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class ChangeImpactTool(IAnalysisService analysisService)
+internal sealed class ChangeImpactTool(IChangeImpactQueryService queryService)
 {
     /// <summary>
     /// Resolves the symbol at the requested file position and returns references, callers, implementations, and impacted files.
@@ -24,7 +24,7 @@ internal sealed class ChangeImpactTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of references, callers, and implementations to include.")] int maxResults = 100,
         CancellationToken cancellationToken = default)
-        => analysisService.AnalyzeChangeImpactAsync(
+        => queryService.AnalyzeChangeImpactAsync(
             new AnalyzeChangeImpactRequest(solutionPath, filePath, line, column, maxResults),
             cancellationToken);
 }
