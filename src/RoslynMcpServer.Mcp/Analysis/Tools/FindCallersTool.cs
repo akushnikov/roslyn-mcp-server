@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns caller locations for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class FindCallersTool(IAnalysisService analysisService)
+internal sealed class FindCallersTool(IFindCallersQueryService queryService)
 {
     /// <summary>
     /// Finds callers for the symbol at the requested file position.
@@ -24,7 +24,7 @@ internal sealed class FindCallersTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of callers to return.")] int maxResults = 100,
         CancellationToken cancellationToken = default)
-        => analysisService.FindCallersAsync(
+        => queryService.FindCallersAsync(
             new FindCallersRequest(solutionPath, filePath, line, column, maxResults),
             cancellationToken);
 }
