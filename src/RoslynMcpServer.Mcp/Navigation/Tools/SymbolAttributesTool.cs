@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns attributes applied to the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class SymbolAttributesTool(INavigationService navigationService)
+internal sealed class SymbolAttributesTool(ISymbolAttributesQueryService queryService)
 {
     /// <summary>
     /// Resolves the symbol at the requested file position and returns its attributes.
@@ -23,7 +23,7 @@ internal sealed class SymbolAttributesTool(INavigationService navigationService)
         [Description("1-based line number of the target symbol location.")] int line,
         [Description("1-based column number of the target symbol location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetSymbolAttributesAsync(
+        => queryService.GetSymbolAttributesAsync(
             new GetSymbolAttributesRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
