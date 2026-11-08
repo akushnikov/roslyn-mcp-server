@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Infrastructure.Tools;
 /// Reports the server's environment health and optional workspace load diagnostics.
 /// </summary>
 [McpServerToolType]
-internal sealed class DiagnoseTool(IServerDiagnosticsService diagnosticsService)
+internal sealed class DiagnoseTool(IDiagnoseQueryService diagnosticsService)
 {
     /// <summary>
     /// Returns environment and optional workspace diagnostics for the current server instance.
