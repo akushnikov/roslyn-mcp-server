@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns compiler diagnostics for a loaded solution or a specific source file.
 /// </summary>
 [McpServerToolType]
-internal sealed class DiagnosticsTool(IAnalysisService analysisService)
+internal sealed class DiagnosticsTool(IDiagnosticsQueryService diagnosticsQueryService)
 {
     /// <summary>
     /// Returns compiler diagnostics for a loaded solution or source file.
@@ -22,7 +22,7 @@ internal sealed class DiagnosticsTool(IAnalysisService analysisService)
         [Description("Optional absolute path to a source file to restrict diagnostics to.")] string? filePath = null,
         [Description("Optional severity filter: Error, Warning, Info, Hidden, or All.")] string? severityFilter = null,
         CancellationToken cancellationToken = default)
-        => analysisService.GetDiagnosticsAsync(
+        => diagnosticsQueryService.GetDiagnosticsAsync(
             new GetDiagnosticsRequest(solutionPath, filePath, severityFilter),
             cancellationToken);
 }
