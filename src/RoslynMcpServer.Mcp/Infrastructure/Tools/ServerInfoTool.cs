@@ -13,7 +13,7 @@ namespace RoslynMcpServer.Mcp.Infrastructure.Tools;
 /// process environment before invoking heavier Roslyn-based tools.
 /// </remarks>
 [McpServerToolType]
-internal sealed class ServerInfoTool(IServerInfoService serverInfoService)
+internal sealed class ServerInfoTool(IServerInfoQueryService serverInfoService)
 {
     /// <summary>
     /// Returns descriptive runtime information about the current server process.
@@ -21,7 +21,7 @@ internal sealed class ServerInfoTool(IServerInfoService serverInfoService)
     /// <param name="cancellationToken">Cancels the tool invocation.</param>
     /// <returns>
     /// A contract result containing server identity, framework, operating system,
-    /// process id, and current UTC timestamp.
+    /// and current UTC timestamp.
     /// </returns>
     [McpServerTool(Name = "server_info"), Description("Returns runtime information about the MCP server instance.")]
     public ValueTask<GetServerInfoResult> GetServerInfo(CancellationToken cancellationToken) =>

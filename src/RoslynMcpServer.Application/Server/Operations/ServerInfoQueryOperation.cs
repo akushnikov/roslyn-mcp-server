@@ -19,12 +19,13 @@ public sealed class ServerInfoQueryOperation(
     : QueryOperationBase<GetServerInfoRequest, GetServerInfoResult, ExceptionDispatchInfo>(logger)
 {
     /// <inheritdoc />
-    protected override ValueTask<OneOf<Success<GetServerInfoResult>, Error<ExceptionDispatchInfo>, Canceled>> ExecuteCoreAsync(
+    protected override async ValueTask<OneOf<Success<GetServerInfoResult>, Error<ExceptionDispatchInfo>, Canceled>> ExecuteCoreAsync(
         GetServerInfoRequest request,
         CancellationToken cancellationToken)
     {
-        _ = dataProvider;
-        throw new NotImplementedException("ServerInfo core execution is completed by plan 16-02.");
+        var result = await dataProvider.GetServerInfoAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new Success<GetServerInfoResult>(result);
     }
 
     /// <inheritdoc />
