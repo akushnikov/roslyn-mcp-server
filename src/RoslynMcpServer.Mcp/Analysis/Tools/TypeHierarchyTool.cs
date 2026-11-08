@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns type hierarchy information for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class TypeHierarchyTool(IAnalysisService analysisService)
+internal sealed class TypeHierarchyTool(ITypeHierarchyQueryService typeHierarchyQueryService)
 {
     /// <summary>
     /// Returns base types, derived types, and interfaces for the requested symbol.
@@ -24,7 +24,7 @@ internal sealed class TypeHierarchyTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Hierarchy direction: Ancestors, Descendants, or Both.")] string? direction = null,
         CancellationToken cancellationToken = default)
-        => analysisService.GetTypeHierarchyAsync(
+        => typeHierarchyQueryService.GetTypeHierarchyAsync(
             new GetTypeHierarchyRequest(solutionPath, filePath, line, column, direction),
             cancellationToken);
 }
