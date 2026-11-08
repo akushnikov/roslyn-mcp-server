@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns implementations for the symbol resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class FindImplementationsTool(IAnalysisService analysisService)
+internal sealed class FindImplementationsTool(IFindImplementationsQueryService findImplementationsQueryService)
 {
     /// <summary>
     /// Finds implementations of an interface, abstract class, or overridable member.
@@ -24,7 +24,7 @@ internal sealed class FindImplementationsTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of implementations to return.")] int maxResults = 100,
         CancellationToken cancellationToken = default)
-        => analysisService.FindImplementationsAsync(
+        => findImplementationsQueryService.FindImplementationsAsync(
             new FindImplementationsRequest(solutionPath, filePath, line, column, maxResults),
             cancellationToken);
 }
