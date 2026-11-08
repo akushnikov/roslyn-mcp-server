@@ -1,4 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using RoslynMcpServer.Abstractions.Analysis.Services;
+using RoslynMcpServer.Application.Analysis;
+using RoslynMcpServer.Application.Analysis.Operations;
 using RoslynMcpServer.Abstractions.Infrastructure.Services;
 using RoslynMcpServer.Abstractions.Navigation.Services;
 using RoslynMcpServer.Abstractions.Server.Services;
@@ -51,6 +54,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFileOverviewQueryService, FileOverviewQueryService>();
         services.AddSingleton<DocumentOutlineQueryOperation>();
         services.AddSingleton<IDocumentOutlineQueryService, DocumentOutlineQueryService>();
+        services.AddSingleton<DiagnosticsQueryOperation>();
+        services.AddSingleton<IDiagnosticsQueryService, DiagnosticsQueryService>();
+        services.AddSingleton<FindCallersQueryOperation>();
+        services.AddSingleton<IFindCallersQueryService, FindCallersQueryService>();
+        services.AddSingleton<FindImplementationsQueryOperation>();
+        services.AddSingleton<IFindImplementationsQueryService, FindImplementationsQueryService>();
+        services.AddSingleton<TypeHierarchyQueryOperation>();
+        services.AddSingleton<ITypeHierarchyQueryService, TypeHierarchyQueryService>();
         return services;
     }
 }
