@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns a compound semantic analysis for the callable member resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class MethodAnalysisTool(IAnalysisService analysisService)
+internal sealed class MethodAnalysisTool(IMethodAnalysisQueryService queryService)
 {
     /// <summary>
     /// Resolves the callable member at the requested file position and returns signature, flow, and outgoing call information.
@@ -24,7 +24,7 @@ internal sealed class MethodAnalysisTool(IAnalysisService analysisService)
         [Description("1-based column number of the target symbol location.")] int column,
         [Description("Maximum number of outgoing calls to return.")] int maxOutgoingCalls = 100,
         CancellationToken cancellationToken = default)
-        => analysisService.AnalyzeMethodAsync(
+        => queryService.AnalyzeMethodAsync(
             new AnalyzeMethodRequest(solutionPath, filePath, line, column, maxOutgoingCalls),
             cancellationToken);
 }
