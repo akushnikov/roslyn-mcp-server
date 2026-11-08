@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns a validation summary for a loaded solution or source file.
 /// </summary>
 [McpServerToolType]
-internal sealed class ValidateCodeTool(IAnalysisService analysisService)
+internal sealed class ValidateCodeTool(IValidateCodeQueryService queryService)
 {
     /// <summary>
     /// Validates the loaded solution or a specific file and reports whether compiler errors are present.
@@ -21,7 +21,7 @@ internal sealed class ValidateCodeTool(IAnalysisService analysisService)
         [Description("Absolute path to a previously loaded .sln, .slnx, or .csproj file.")] string solutionPath,
         [Description("Optional absolute path to a source file to restrict validation to.")] string? filePath = null,
         CancellationToken cancellationToken = default)
-        => analysisService.ValidateCodeAsync(
+        => queryService.ValidateCodeAsync(
             new ValidateCodeRequest(solutionPath, filePath),
             cancellationToken);
 }
