@@ -9,34 +9,6 @@ namespace RoslynMcpServer.Abstractions.Analysis.Services;
 public interface IAnalysisService
 {
     /// <summary>
-    /// Returns compiler diagnostics for a loaded solution or source file.
-    /// </summary>
-    ValueTask<GetDiagnosticsResult> GetDiagnosticsAsync(
-        GetDiagnosticsRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns implementations for the symbol resolved at a source position.
-    /// </summary>
-    ValueTask<FindImplementationsResult> FindImplementationsAsync(
-        FindImplementationsRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns type hierarchy information for the symbol resolved at a source position.
-    /// </summary>
-    ValueTask<GetTypeHierarchyResult> GetTypeHierarchyAsync(
-        GetTypeHierarchyRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns callers for the symbol resolved at a source position.
-    /// </summary>
-    ValueTask<FindCallersResult> FindCallersAsync(
-        FindCallersRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Returns outgoing calls for the callable symbol resolved at a source position.
     /// </summary>
     ValueTask<GetOutgoingCallsResult> GetOutgoingCallsAsync(

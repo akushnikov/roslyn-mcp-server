@@ -17,237 +17,9 @@ namespace RoslynMcpServer.Infrastructure.Roslyn.Analysis;
 /// </summary>
 internal sealed class RoslynAnalysisService(
     IWorkspaceSessionProvider workspaceSessionProvider,
+    IDiagnosticsQueryDataProvider diagnosticsQueryDataProvider,
     ILogger<RoslynAnalysisService> logger) : IAnalysisService
 {
-    public async ValueTask<GetDiagnosticsResult> GetDiagnosticsAsync(
-        GetDiagnosticsRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var session = await workspaceSessionProvider.GetReadySessionAsync(request.SolutionPath, cancellationToken);
-        if (session is null)
-        {
-            return new GetDiagnosticsResult(
-                Diagnostics: Array.Empty<AnalysisDiagnosticDescriptor>(),
-                FailureReason: "The requested solution is not currently loaded.",
-                Guidance: "Call load_solution first for the requested solutionPath.");
-        }
-
-        var normalizedFilePath = string.IsNullOrWhiteSpace(request.FilePath)
-            ? null
-            : NormalizePath(request.FilePath);
-
-        if (normalizedFilePath is not null && FindDocument(session, normalizedFilePath) is null)
-        {
-            return new GetDiagnosticsResult(
-                Diagnostics: Array.Empty<AnalysisDiagnosticDescriptor>(),
-                FailureReason: "The requested file was not found in the loaded solution.",
-                Guidance: "Call get_project_structure with includeDocuments=true to inspect valid file paths.");
-        }
-
-        var diagnostics = new List<AnalysisDiagnosticDescriptor>();
-
-        foreach (var project in session.Solution.Projects)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var compilation = await project.GetCompilationAsync(cancellationToken);
-            if (compilation is null)
-            {
-                continue;
-            }
-
-            foreach (var diagnostic in compilation.GetDiagnostics(cancellationToken))
-            {
-                if (!MatchesSeverityFilter(diagnostic, request.SeverityFilter))
-                {
-                    continue;
-                }
-
-                var location = MapLocation(diagnostic.Location);
-                if (normalizedFilePath is not null &&
-                    !string.Equals(location?.FilePath, normalizedFilePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                diagnostics.Add(new AnalysisDiagnosticDescriptor(
-                    diagnostic.Id,
-                    diagnostic.Severity.ToString(),
-                    diagnostic.GetMessage(),
-                    location));
-            }
-        }
-
-        return new GetDiagnosticsResult(
-            Diagnostics: diagnostics
-                .OrderBy(static diagnostic => diagnostic.Location?.FilePath, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(static diagnostic => diagnostic.Location?.Line ?? int.MaxValue)
-                .ThenBy(static diagnostic => diagnostic.Location?.Column ?? int.MaxValue)
-                .ToArray(),
-            FailureReason: null,
-            Guidance: null);
-    }
-
-    public async ValueTask<FindImplementationsResult> FindImplementationsAsync(
-        FindImplementationsRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var resolved = await ResolveSymbolAsync(request.SolutionPath, request.FilePath, request.Line, request.Column, cancellationToken);
-        if (resolved.FailureReason is not null)
-        {
-            return new FindImplementationsResult(null, Array.Empty<SymbolDescriptor>(), resolved.FailureReason, resolved.Guidance);
-        }
-
-        if (resolved.Symbol is null || resolved.Session is null)
-        {
-            return new FindImplementationsResult(
-                Symbol: null,
-                Implementations: Array.Empty<SymbolDescriptor>(),
-                FailureReason: "No symbol was resolved at the requested source position.",
-                Guidance: "Move the cursor onto an interface, abstract member, or type declaration and try again.");
-        }
-
-        try
-        {
-            var implementations = await SymbolFinder.FindImplementationsAsync(
-                resolved.Symbol,
-                resolved.Session.Solution,
-                cancellationToken: cancellationToken);
-
-            var results = implementations
-                .Select(MapSymbol)
-                .Where(static descriptor => descriptor is not null)
-                .Cast<SymbolDescriptor>()
-                .DistinctBy(static descriptor => $"{descriptor.Definition?.FilePath}:{descriptor.Definition?.Line}:{descriptor.Definition?.Column}:{descriptor.DisplayName}")
-                .Take(NormalizeMaxResults(request.MaxResults))
-                .ToArray();
-
-            return new FindImplementationsResult(MapSymbol(resolved.Symbol), results, null, null);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Failed to find implementations for {FilePath}:{Line}:{Column}", request.FilePath, request.Line, request.Column);
-            return new FindImplementationsResult(
-                Symbol: MapSymbol(resolved.Symbol),
-                Implementations: Array.Empty<SymbolDescriptor>(),
-                FailureReason: "The server could not compute implementations for the resolved symbol.",
-                Guidance: "Retry the request on an interface, abstract member, or base type.");
-        }
-    }
-
-    public async ValueTask<GetTypeHierarchyResult> GetTypeHierarchyAsync(
-        GetTypeHierarchyRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var resolved = await ResolveSymbolAsync(request.SolutionPath, request.FilePath, request.Line, request.Column, cancellationToken);
-        if (resolved.FailureReason is not null)
-        {
-            return new GetTypeHierarchyResult(null, Array.Empty<SymbolDescriptor>(), Array.Empty<SymbolDescriptor>(), Array.Empty<SymbolDescriptor>(), resolved.FailureReason, resolved.Guidance);
-        }
-
-        var typeSymbol = resolved.Symbol switch
-        {
-            INamedTypeSymbol namedType => namedType,
-            ISymbol { ContainingType: not null } symbol => symbol.ContainingType,
-            _ => null
-        };
-
-        if (typeSymbol is null)
-        {
-            return new GetTypeHierarchyResult(
-                Symbol: MapSymbol(resolved.Symbol),
-                BaseTypes: Array.Empty<SymbolDescriptor>(),
-                DerivedTypes: Array.Empty<SymbolDescriptor>(),
-                Interfaces: Array.Empty<SymbolDescriptor>(),
-                FailureReason: "The resolved symbol does not have a type hierarchy.",
-                Guidance: "Use a type declaration or a member that belongs to a named type.");
-        }
-
-        var direction = request.Direction?.Trim();
-        var includeAncestors = string.IsNullOrWhiteSpace(direction) || direction.Equals("Both", StringComparison.OrdinalIgnoreCase) || direction.Equals("Ancestors", StringComparison.OrdinalIgnoreCase);
-        var includeDescendants = string.IsNullOrWhiteSpace(direction) || direction.Equals("Both", StringComparison.OrdinalIgnoreCase) || direction.Equals("Descendants", StringComparison.OrdinalIgnoreCase);
-
-        var baseTypes = includeAncestors
-            ? EnumerateBaseTypes(typeSymbol).Select(MapSymbol).Where(static descriptor => descriptor is not null).Cast<SymbolDescriptor>().ToArray()
-            : Array.Empty<SymbolDescriptor>();
-
-        var derivedTypes = includeDescendants
-            ? await FindDerivedTypesAsync(typeSymbol, resolved.Session?.Solution, cancellationToken)
-            : Array.Empty<SymbolDescriptor>();
-
-        var interfaces = includeAncestors
-            ? typeSymbol.AllInterfaces.Select(MapSymbol).Where(static descriptor => descriptor is not null).Cast<SymbolDescriptor>().ToArray()
-            : Array.Empty<SymbolDescriptor>();
-
-        return new GetTypeHierarchyResult(MapSymbol(typeSymbol), baseTypes, derivedTypes, interfaces, null, null);
-    }
-
-    public async ValueTask<FindCallersResult> FindCallersAsync(
-        FindCallersRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var resolved = await ResolveSymbolAsync(request.SolutionPath, request.FilePath, request.Line, request.Column, cancellationToken);
-        if (resolved.FailureReason is not null)
-        {
-            return new FindCallersResult(null, Array.Empty<CallerDescriptor>(), resolved.FailureReason, resolved.Guidance);
-        }
-
-        if (resolved.Symbol is null || resolved.Session is null)
-        {
-            return new FindCallersResult(
-                Symbol: null,
-                Callers: Array.Empty<CallerDescriptor>(),
-                FailureReason: "No symbol was resolved at the requested source position.",
-                Guidance: "Move the cursor onto a method, property, or other callable member and try again.");
-        }
-
-        try
-        {
-            var callers = await SymbolFinder.FindCallersAsync(resolved.Symbol, resolved.Session.Solution, cancellationToken);
-            var results = new List<CallerDescriptor>();
-            var maxResults = NormalizeMaxResults(request.MaxResults);
-
-            foreach (var caller in callers)
-            {
-                foreach (var location in caller.Locations)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var descriptor = await MapCallerAsync(caller.CallingSymbol?.ToDisplayString(), location, cancellationToken);
-                    if (descriptor is null)
-                    {
-                        continue;
-                    }
-
-                    results.Add(descriptor);
-                    if (results.Count >= maxResults)
-                    {
-                        return new FindCallersResult(MapSymbol(resolved.Symbol), results, null, null);
-                    }
-                }
-            }
-
-            return new FindCallersResult(MapSymbol(resolved.Symbol), results, null, null);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Failed to find callers for {FilePath}:{Line}:{Column}", request.FilePath, request.Line, request.Column);
-            return new FindCallersResult(
-                Symbol: MapSymbol(resolved.Symbol),
-                Callers: Array.Empty<CallerDescriptor>(),
-                FailureReason: "The server could not compute callers for the resolved symbol.",
-                Guidance: "Retry the request on a callable symbol inside the loaded solution.");
-        }
-    }
-
     public async ValueTask<GetOutgoingCallsResult> GetOutgoingCallsAsync(
         GetOutgoingCallsRequest request,
         CancellationToken cancellationToken = default)
@@ -340,7 +112,7 @@ internal sealed class RoslynAnalysisService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var diagnostics = await GetDiagnosticsAsync(
+        var diagnostics = await diagnosticsQueryDataProvider.GetDiagnosticsAsync(
             new GetDiagnosticsRequest(request.SolutionPath, request.FilePath, "All"),
             cancellationToken);
 
@@ -915,22 +687,6 @@ internal sealed class RoslynAnalysisService(
             _ => null
         };
 
-    private static bool MatchesSeverityFilter(Diagnostic diagnostic, string? severityFilter)
-    {
-        if (string.IsNullOrWhiteSpace(severityFilter) || severityFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return diagnostic.Severity switch
-        {
-            DiagnosticSeverity.Error => severityFilter.Equals("Error", StringComparison.OrdinalIgnoreCase),
-            DiagnosticSeverity.Warning => severityFilter.Equals("Warning", StringComparison.OrdinalIgnoreCase),
-            DiagnosticSeverity.Info => severityFilter.Equals("Info", StringComparison.OrdinalIgnoreCase),
-            DiagnosticSeverity.Hidden => severityFilter.Equals("Hidden", StringComparison.OrdinalIgnoreCase),
-            _ => false
-        };
-    }
 
     private static SymbolLocation? MapLocation(Location location)
     {
@@ -946,37 +702,7 @@ internal sealed class RoslynAnalysisService(
             lineSpan.StartLinePosition.Character + 1);
     }
 
-    private static IEnumerable<INamedTypeSymbol> EnumerateBaseTypes(INamedTypeSymbol typeSymbol)
-    {
-        for (var current = typeSymbol.BaseType; current is not null; current = current.BaseType)
-        {
-            yield return current;
-        }
-    }
 
-    private static async Task<IReadOnlyList<SymbolDescriptor>> FindDerivedTypesAsync(
-        INamedTypeSymbol typeSymbol,
-        Solution? solution,
-        CancellationToken cancellationToken)
-    {
-        if (solution is null)
-        {
-            return Array.Empty<SymbolDescriptor>();
-        }
-
-        IEnumerable<INamedTypeSymbol> derivedTypes = typeSymbol.TypeKind switch
-        {
-            TypeKind.Interface => await SymbolFinder.FindImplementationsAsync(typeSymbol, solution, cancellationToken: cancellationToken),
-            _ => await SymbolFinder.FindDerivedClassesAsync(typeSymbol, solution, transitive: true, cancellationToken: cancellationToken)
-        };
-
-        return derivedTypes
-            .Select(MapSymbol)
-            .Where(static descriptor => descriptor is not null)
-            .Cast<SymbolDescriptor>()
-            .DistinctBy(static descriptor => $"{descriptor.Definition?.FilePath}:{descriptor.Definition?.Line}:{descriptor.Definition?.Column}:{descriptor.DisplayName}")
-            .ToArray();
-    }
 
     private static Document? FindDocument(RoslynWorkspaceSession session, string filePath)
     {

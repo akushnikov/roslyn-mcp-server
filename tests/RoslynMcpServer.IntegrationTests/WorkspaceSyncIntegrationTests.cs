@@ -23,7 +23,7 @@ public sealed class WorkspaceSyncIntegrationTests
             await using var provider = CreateProvider();
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
             var symbolInfoQueryService = provider.GetRequiredService<ISymbolInfoQueryService>();
-            var analysisService = provider.GetRequiredService<IAnalysisService>();
+            var diagnosticsQueryService = provider.GetRequiredService<IDiagnosticsQueryService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
 
@@ -60,7 +60,7 @@ public sealed class WorkspaceSyncIntegrationTests
 
             await AwaitConditionAsync(async () =>
             {
-                var result = await analysisService.GetDiagnosticsAsync(
+                var result = await diagnosticsQueryService.GetDiagnosticsAsync(
                     new GetDiagnosticsRequest(fixture.SolutionPath, documentPath, SeverityFilter: "Error"));
 
                 return result.Diagnostics.Any(static diagnostic => diagnostic.Id == "CS0103");
@@ -156,7 +156,7 @@ public sealed class WorkspaceSyncIntegrationTests
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
             var projectStructureService = provider.GetRequiredService<IProjectStructureService>();
             var searchSymbolsQueryService = provider.GetRequiredService<ISearchSymbolsQueryService>();
-            var analysisService = provider.GetRequiredService<IAnalysisService>();
+            var typeHierarchyQueryService = provider.GetRequiredService<ITypeHierarchyQueryService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
 
@@ -193,7 +193,7 @@ public sealed class WorkspaceSyncIntegrationTests
                     return false;
                 }
 
-                var hierarchy = await analysisService.GetTypeHierarchyAsync(
+                var hierarchy = await typeHierarchyQueryService.GetTypeHierarchyAsync(
                     new GetTypeHierarchyRequest(fixture.SolutionPath, createdFilePath, Line: 3, Column: 21, Direction: "Both"));
 
                 return string.Equals(hierarchy.Symbol?.Name, "NewFeature", StringComparison.Ordinal);
