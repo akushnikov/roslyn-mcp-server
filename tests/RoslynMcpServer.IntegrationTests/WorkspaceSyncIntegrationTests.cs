@@ -22,7 +22,7 @@ public sealed class WorkspaceSyncIntegrationTests
         {
             await using var provider = CreateProvider();
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
-            var navigationService = provider.GetRequiredService<INavigationService>();
+            var symbolInfoQueryService = provider.GetRequiredService<ISymbolInfoQueryService>();
             var analysisService = provider.GetRequiredService<IAnalysisService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
@@ -41,7 +41,7 @@ public sealed class WorkspaceSyncIntegrationTests
 
             await AwaitConditionAsync(async () =>
             {
-                var result = await navigationService.GetSymbolInfoAsync(
+                var result = await symbolInfoQueryService.GetSymbolInfoAsync(
                     new GetSymbolInfoRequest(fixture.SolutionPath, documentPath, Line: 3, Column: 21));
 
                 return string.Equals(result.Symbol?.Name, "WelcomeService", StringComparison.Ordinal);
@@ -81,7 +81,7 @@ public sealed class WorkspaceSyncIntegrationTests
         {
             await using var provider = CreateProvider();
             var loader = provider.GetRequiredService<IWorkspaceLoader>();
-            var navigationService = provider.GetRequiredService<INavigationService>();
+            var symbolInfoQueryService = provider.GetRequiredService<ISymbolInfoQueryService>();
             var findReferencesQueryService = provider.GetRequiredService<IFindReferencesQueryService>();
 
             await loader.LoadAsync(new LoadSolutionRequest(fixture.SolutionPath, ForceReload: false));
@@ -129,7 +129,7 @@ public sealed class WorkspaceSyncIntegrationTests
 
             await AwaitConditionAsync(async () =>
             {
-                var symbolInfo = await navigationService.GetSymbolInfoAsync(
+                var symbolInfo = await symbolInfoQueryService.GetSymbolInfoAsync(
                     new GetSymbolInfoRequest(fixture.SolutionPath, messagePath, Line: 3, Column: 22));
 
                 var references = await findReferencesQueryService.FindReferencesAsync(
