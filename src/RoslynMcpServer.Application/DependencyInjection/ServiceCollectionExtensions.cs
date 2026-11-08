@@ -37,6 +37,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFindReferencesQueryService, FindReferencesQueryService>();
         services.AddSingleton<SearchSymbolsQueryOperation>();
         services.AddSingleton<ISearchSymbolsQueryService, SearchSymbolsQueryService>();
+        services.AddSingleton<TypeMembersQueryOperation>();
+        services.AddSingleton<ITypeMembersQueryService, TypeMembersQueryService>();
         return services;
     }
 }

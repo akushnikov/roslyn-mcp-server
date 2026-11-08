@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns members for the type resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class TypeMembersTool(INavigationService navigationService)
+internal sealed class TypeMembersTool(ITypeMembersQueryService typeMembersQueryService)
 {
     /// <summary>
     /// Resolves the type at the requested file position and returns its members.
@@ -23,7 +23,7 @@ internal sealed class TypeMembersTool(INavigationService navigationService)
         [Description("1-based line number of the target type or member location.")] int line,
         [Description("1-based column number of the target type or member location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetTypeMembersAsync(
+        => typeMembersQueryService.GetTypeMembersAsync(
             new GetTypeMembersRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
