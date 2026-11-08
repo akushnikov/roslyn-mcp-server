@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns a compact overview for a source file in the loaded solution.
 /// </summary>
 [McpServerToolType]
-internal sealed class FileOverviewTool(INavigationService navigationService)
+internal sealed class FileOverviewTool(IFileOverviewQueryService fileOverviewQueryService)
 {
     /// <summary>
     /// Returns namespaces and type summaries for the requested source file.
@@ -21,7 +21,7 @@ internal sealed class FileOverviewTool(INavigationService navigationService)
         [Description("Absolute path to a previously loaded .sln, .slnx, or .csproj file.")] string solutionPath,
         [Description("Absolute path to the source file.")] string filePath,
         CancellationToken cancellationToken = default)
-        => navigationService.GetFileOverviewAsync(
+        => fileOverviewQueryService.GetFileOverviewAsync(
             new GetFileOverviewRequest(solutionPath, filePath),
             cancellationToken);
 }
