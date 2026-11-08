@@ -27,7 +27,7 @@ public sealed class ChangeImpactQueryServiceTests
     }
 
     [Fact]
-    public async Task AnalyzeChangeImpactAsync_MapsFailure_PreservingSymbolAndDroppingCallers()
+    public async Task AnalyzeChangeImpactAsync_MapsFailure_PreservingSymbolAndDroppingPartialImpact()
     {
         var symbol = CreateSymbol();
         var provider = new TestProvider
@@ -52,7 +52,7 @@ public sealed class ChangeImpactQueryServiceTests
         var result = await CreateService(provider).AnalyzeChangeImpactAsync(CreateRequest() with { MaxResults = 0 });
 
         Assert.Null(result.Symbol);
-        Assert.Empty(result.Callers);
+        Assert.Null(result.Impact);
         Assert.Equal("MaxResults must be a positive value.", result.FailureReason);
         Assert.Equal("Pass a positive integer (e.g., the default of 100).", result.Guidance);
         Assert.Equal(0, provider.Calls);
@@ -73,7 +73,7 @@ public sealed class ChangeImpactQueryServiceTests
         var result = await CreateService(provider).AnalyzeChangeImpactAsync(CreateRequest(), source.Token);
 
         Assert.Null(result.Symbol);
-        Assert.Empty(result.Callers);
+        Assert.Null(result.Impact);
         Assert.Equal("The operation was canceled.", result.FailureReason);
         Assert.Equal("Retry the request when the operation can run to completion.", result.Guidance);
         Assert.Equal(cancelInFlight ? 1 : 0, provider.Calls);
