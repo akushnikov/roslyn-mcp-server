@@ -409,8 +409,9 @@ public sealed class AnalysisQueryIntegrationTests
                     .AddProjectReference(dependentId, new ProjectReference(declarationProject.Id))
                     .AddDocument(DocumentInfo.Create(DocumentId.CreateNewId(dependentId), "Dependent.cs",
                         loader: loader, filePath: Path.Combine(root, "Dependent.cs")));
-                Assert.True(workspace.TryApplyChanges(solution));
-                var sessionProvider = new ControlledSessionProvider(new RoslynWorkspaceSession(null!, workspace, workspace.CurrentSolution));
+                // Applying this snapshot would synchronously load the deliberately blocked document.
+                // Providers can query the immutable snapshot without mutating the workspace first.
+                var sessionProvider = new ControlledSessionProvider(new RoslynWorkspaceSession(null!, workspace, solution));
                 var provider = new ServiceCollection().AddLogging().AddRoslynMcpServer()
                     .AddSingleton<IWorkspaceSessionProvider>(sessionProvider).BuildServiceProvider();
                 return new TraversalWorkspace(workspace, provider, loader, projectPath, declarationPath);
