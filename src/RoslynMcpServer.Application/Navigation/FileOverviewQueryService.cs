@@ -7,7 +7,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects FileOverview pipeline outcomes into the public result contract.</summary>
+/// <summary>Projects overview outcomes without losing failure-stage paths or treating cancellation as an error.</summary>
 public sealed class FileOverviewQueryService(FileOverviewQueryOperation operation) : IFileOverviewQueryService
 {
     /// <inheritdoc />

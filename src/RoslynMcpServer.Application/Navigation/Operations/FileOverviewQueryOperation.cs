@@ -10,7 +10,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the FileOverview query through the shared query pipeline.</summary>
+/// <summary>Validates document paths and promotes provider failures while retaining their document context.</summary>
 public sealed class FileOverviewQueryOperation(
     IFileOverviewQueryDataProvider dataProvider,
     ILogger<FileOverviewQueryOperation> logger) : QueryOperationBase<GetFileOverviewRequest, GetFileOverviewResult, DocumentQueryError>(logger)
