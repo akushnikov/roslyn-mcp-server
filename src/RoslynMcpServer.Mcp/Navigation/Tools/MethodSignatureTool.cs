@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns signature details for the callable member resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class MethodSignatureTool(INavigationService navigationService)
+internal sealed class MethodSignatureTool(IMethodSignatureQueryService queryService)
 {
     /// <summary>
     /// Resolves the callable member at the requested file position and returns its signature.
@@ -23,7 +23,7 @@ internal sealed class MethodSignatureTool(INavigationService navigationService)
         [Description("1-based line number of the target symbol location.")] int line,
         [Description("1-based column number of the target symbol location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetMethodSignatureAsync(
+        => queryService.GetMethodSignatureAsync(
             new GetMethodSignatureRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
