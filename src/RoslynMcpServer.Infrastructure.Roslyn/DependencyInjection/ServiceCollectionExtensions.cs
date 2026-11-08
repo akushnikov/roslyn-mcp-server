@@ -55,6 +55,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAnalysisService, RoslynAnalysisService>();
         services.AddSingleton<IRuntimeEnvironmentService, RuntimeEnvironmentService>();
 
+        services.AddSingleton<ITypeOverviewQueryDataProvider, RoslynTypeOverviewQueryDataProvider>();
+        services.AddSingleton<ISymbolAttributesQueryDataProvider, RoslynSymbolAttributesQueryDataProvider>();
+        services.AddSingleton<IMethodSignatureQueryDataProvider, RoslynMethodSignatureQueryDataProvider>();
+        services.AddSingleton<IMethodSourceQueryDataProvider, RoslynMethodSourceQueryDataProvider>();
+        services.AddSingleton<IFileOverviewQueryDataProvider, RoslynFileOverviewQueryDataProvider>();
+        services.AddSingleton<IDocumentOutlineQueryDataProvider, RoslynDocumentOutlineQueryDataProvider>();
         return services;
     }
 }

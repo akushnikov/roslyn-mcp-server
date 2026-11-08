@@ -39,6 +39,18 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISearchSymbolsQueryService, SearchSymbolsQueryService>();
         services.AddSingleton<TypeMembersQueryOperation>();
         services.AddSingleton<ITypeMembersQueryService, TypeMembersQueryService>();
+        services.AddSingleton<TypeOverviewQueryOperation>();
+        services.AddSingleton<ITypeOverviewQueryService, TypeOverviewQueryService>();
+        services.AddSingleton<SymbolAttributesQueryOperation>();
+        services.AddSingleton<ISymbolAttributesQueryService, SymbolAttributesQueryService>();
+        services.AddSingleton<MethodSignatureQueryOperation>();
+        services.AddSingleton<IMethodSignatureQueryService, MethodSignatureQueryService>();
+        services.AddSingleton<MethodSourceQueryOperation>();
+        services.AddSingleton<IMethodSourceQueryService, MethodSourceQueryService>();
+        services.AddSingleton<FileOverviewQueryOperation>();
+        services.AddSingleton<IFileOverviewQueryService, FileOverviewQueryService>();
+        services.AddSingleton<DocumentOutlineQueryOperation>();
+        services.AddSingleton<IDocumentOutlineQueryService, DocumentOutlineQueryService>();
         return services;
     }
 }
