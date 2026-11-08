@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OneOf;
 using OneOf.Types;
-using RoslynMcpServer.Abstractions.Navigation.Models;
 using RoslynMcpServer.Abstractions.Navigation.Requests;
 using RoslynMcpServer.Abstractions.Navigation.Results;
 using RoslynMcpServer.Abstractions.Navigation.Services;
@@ -10,7 +9,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the MethodSignature query through the shared query pipeline.</summary>
+/// <summary>Validates signature requests before provider access and promotes provider failures into pipeline errors.</summary>
 public sealed class MethodSignatureQueryOperation(
     IMethodSignatureQueryDataProvider dataProvider,
     ILogger<MethodSignatureQueryOperation> logger) : QueryOperationBase<GetMethodSignatureRequest, GetMethodSignatureResult, QueryError>(logger)

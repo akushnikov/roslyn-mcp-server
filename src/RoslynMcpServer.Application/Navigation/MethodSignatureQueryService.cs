@@ -1,4 +1,3 @@
-using RoslynMcpServer.Abstractions.Navigation.Models;
 using RoslynMcpServer.Abstractions.Navigation.Requests;
 using RoslynMcpServer.Abstractions.Navigation.Results;
 using RoslynMcpServer.Abstractions.Navigation.Services;
@@ -7,7 +6,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects MethodSignature pipeline outcomes into the public result contract.</summary>
+/// <summary>Preserves successful signatures and projects error/cancellation outcomes into the public result contract.</summary>
 public sealed class MethodSignatureQueryService(MethodSignatureQueryOperation operation) : IMethodSignatureQueryService
 {
     /// <inheritdoc />
