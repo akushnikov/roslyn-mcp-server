@@ -64,6 +64,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMethodSourceQueryDataProvider, RoslynMethodSourceQueryDataProvider>();
         services.AddSingleton<IFileOverviewQueryDataProvider, RoslynFileOverviewQueryDataProvider>();
         services.AddSingleton<IDocumentOutlineQueryDataProvider, RoslynDocumentOutlineQueryDataProvider>();
+        services.AddSingleton<IMethodAnalysisQueryDataProvider, RoslynMethodAnalysisQueryDataProvider>();
+        services.AddSingleton<IValidateCodeQueryDataProvider, RoslynValidateCodeQueryDataProvider>();
+        services.AddSingleton<IOutgoingCallsQueryDataProvider, RoslynOutgoingCallsQueryDataProvider>();
+        services.AddSingleton<IChangeImpactQueryDataProvider, RoslynChangeImpactQueryDataProvider>();
+        services.AddSingleton<ITypeCompatibilityQueryDataProvider, RoslynTypeCompatibilityQueryDataProvider>();
         return services;
     }
 }

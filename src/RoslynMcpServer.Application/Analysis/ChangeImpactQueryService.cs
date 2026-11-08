@@ -1,4 +1,3 @@
-using RoslynMcpServer.Abstractions.Analysis.Models;
 using RoslynMcpServer.Abstractions.Analysis.Requests;
 using RoslynMcpServer.Abstractions.Analysis.Results;
 using RoslynMcpServer.Abstractions.Analysis.Services;

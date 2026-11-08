@@ -62,6 +62,16 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFindImplementationsQueryService, FindImplementationsQueryService>();
         services.AddSingleton<TypeHierarchyQueryOperation>();
         services.AddSingleton<ITypeHierarchyQueryService, TypeHierarchyQueryService>();
+        services.AddSingleton<MethodAnalysisQueryOperation>();
+        services.AddSingleton<IMethodAnalysisQueryService, MethodAnalysisQueryService>();
+        services.AddSingleton<ValidateCodeQueryOperation>();
+        services.AddSingleton<IValidateCodeQueryService, ValidateCodeQueryService>();
+        services.AddSingleton<OutgoingCallsQueryOperation>();
+        services.AddSingleton<IOutgoingCallsQueryService, OutgoingCallsQueryService>();
+        services.AddSingleton<ChangeImpactQueryOperation>();
+        services.AddSingleton<IChangeImpactQueryService, ChangeImpactQueryService>();
+        services.AddSingleton<TypeCompatibilityQueryOperation>();
+        services.AddSingleton<ITypeCompatibilityQueryService, TypeCompatibilityQueryService>();
         return services;
     }
 }
