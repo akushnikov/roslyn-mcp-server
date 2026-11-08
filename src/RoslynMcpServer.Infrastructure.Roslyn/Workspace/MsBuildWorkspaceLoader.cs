@@ -24,6 +24,12 @@ internal sealed class MsBuildWorkspaceLoader(
     private static bool _registered;
     private readonly ConcurrentDictionary<string, CacheEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Supplies the disposable probe's open step; tests can synchronize the actual probe catch boundary.
+    /// The normal path uses the same MSBuild open routine as workspace loading.
+    /// </summary>
+    internal Func<MSBuildWorkspace, string, string, CancellationToken, Task<Solution>> ProbeOpenAsync { get; init; } = OpenAsync;
+
     public ValueTask<LoadedWorkspaceSnapshot?> GetAsync(
         string solutionPath,
         CancellationToken cancellationToken = default)
@@ -256,7 +262,8 @@ internal sealed class MsBuildWorkspaceLoader(
             using var workspace = MSBuildWorkspace.Create();
             collector.Attach(workspace);
 
-            var solution = await OpenAsync(workspace, normalizedPath, extension, cancellationToken);
+            var solution = await ProbeOpenAsync(workspace, normalizedPath, extension, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             var snapshot = WorkspaceSnapshotFactory.CreateSnapshot(solution, normalizedPath, DateTimeOffset.UtcNow);
 
             return new WorkspaceHealthDescriptor(
@@ -266,8 +273,13 @@ internal sealed class MsBuildWorkspaceLoader(
                 DocumentCount: snapshot.Workspace.DocumentCount,
                 Diagnostics: collector.Diagnostics);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception exception)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogError(exception, "Failed to probe workspace for {SolutionPath}", normalizedPath);
 
             return new WorkspaceHealthDescriptor(

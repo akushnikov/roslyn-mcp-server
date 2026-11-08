@@ -16,6 +16,7 @@ internal sealed class RuntimeEnvironmentService(IWorkspaceProbeService workspace
         cancellationToken.ThrowIfCancellationRequested();
 
         var dotnetVersion = await TryRunProcessAsync("dotnet", "--version", cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
 
         string msbuildStatus;
         bool isMsBuildAvailable;
@@ -36,6 +37,7 @@ internal sealed class RuntimeEnvironmentService(IWorkspaceProbeService workspace
             msbuildStatus = $"Error: {exception.Message}";
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return new EnvironmentDescriptor(
             DotnetSdkVersion: dotnetVersion?.Trim(),
             IsMsBuildAvailable: isMsBuildAvailable,
@@ -52,6 +54,7 @@ internal sealed class RuntimeEnvironmentService(IWorkspaceProbeService workspace
         string arguments,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var startInfo = new ProcessStartInfo(fileName, arguments)
@@ -65,15 +68,22 @@ internal sealed class RuntimeEnvironmentService(IWorkspaceProbeService workspace
             using var process = Process.Start(startInfo);
             if (process is null)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return null;
             }
 
             var output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
             await process.WaitForExitAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             return process.ExitCode == 0 ? output : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return null;
         }
     }
