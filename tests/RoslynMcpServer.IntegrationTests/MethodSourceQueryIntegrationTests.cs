@@ -138,8 +138,18 @@ public sealed class MethodSourceQueryIntegrationTests
             try
             {
                 var projectPath = Path.Combine(root, "Sample.csproj");
+                // The temporary project has no restore assets; supply framework metadata for callable resolution.
                 await File.WriteAllTextAsync(projectPath,
-                    "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>");
+                    $$"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup>
+                      <ItemGroup>
+                        <Reference Include="System.Private.CoreLib">
+                          <HintPath>{{System.Security.SecurityElement.Escape(typeof(object).Assembly.Location)}}</HintPath>
+                        </Reference>
+                      </ItemGroup>
+                    </Project>
+                    """);
                 await File.WriteAllTextAsync(Path.Combine(root, "A.cs"), InvocationSource);
                 await File.WriteAllTextAsync(Path.Combine(root, "B.cs"), DeclarationSource);
                 provider = new ServiceCollection().AddLogging().AddRoslynMcpServer().BuildServiceProvider();
