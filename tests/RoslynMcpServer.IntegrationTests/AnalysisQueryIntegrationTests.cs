@@ -15,7 +15,7 @@ namespace RoslynMcpServer.IntegrationTests;
 public sealed class AnalysisQueryIntegrationTests
 {
     [Fact]
-    public void ProductionRegistration_ResolvesDedicatedQueriesAndRetainedLegacyService()
+    public void ProductionRegistration_ResolvesAllDedicatedAnalysisQueries()
     {
         using var provider = CreateProvider();
 
@@ -23,12 +23,11 @@ public sealed class AnalysisQueryIntegrationTests
         Assert.NotNull(provider.GetRequiredService<IFindCallersQueryService>());
         Assert.NotNull(provider.GetRequiredService<IFindImplementationsQueryService>());
         Assert.NotNull(provider.GetRequiredService<ITypeHierarchyQueryService>());
-        Assert.NotNull(provider.GetRequiredService<IAnalysisService>());
-        Assert.Equal(new[]
-        {
-            "AnalyzeChangeImpactAsync", "AnalyzeMethodAsync", "CheckTypeCompatibilityAsync",
-            "GetOutgoingCallsAsync", "ValidateCodeAsync"
-        }, typeof(IAnalysisService).GetMethods().Select(static method => method.Name).Order());
+        Assert.NotNull(provider.GetRequiredService<IMethodAnalysisQueryService>());
+        Assert.NotNull(provider.GetRequiredService<IValidateCodeQueryService>());
+        Assert.NotNull(provider.GetRequiredService<IOutgoingCallsQueryService>());
+        Assert.NotNull(provider.GetRequiredService<IChangeImpactQueryService>());
+        Assert.NotNull(provider.GetRequiredService<ITypeCompatibilityQueryService>());
     }
 
     [Theory]
@@ -36,6 +35,11 @@ public sealed class AnalysisQueryIntegrationTests
     [InlineData("FindCallers", nameof(IFindCallersQueryService))]
     [InlineData("FindImplementations", nameof(IFindImplementationsQueryService))]
     [InlineData("TypeHierarchy", nameof(ITypeHierarchyQueryService))]
+    [InlineData("MethodAnalysis", nameof(IMethodAnalysisQueryService))]
+    [InlineData("ValidateCode", nameof(IValidateCodeQueryService))]
+    [InlineData("OutgoingCalls", nameof(IOutgoingCallsQueryService))]
+    [InlineData("ChangeImpact", nameof(IChangeImpactQueryService))]
+    [InlineData("TypeCompatibility", nameof(ITypeCompatibilityQueryService))]
     public void AdapterConstructor_BindsDedicatedService(string toolName, string serviceType)
     {
         var path = Path.Combine(FindRepoRoot(), "src", "RoslynMcpServer.Mcp", "Analysis", "Tools", toolName + "Tool.cs");
@@ -178,15 +182,15 @@ public sealed class AnalysisQueryIntegrationTests
     }
 
     [Fact]
-    public async Task RetainedValidateCode_UsesDedicatedAllDiagnosticsWithoutChangingCountsOrFailures()
+    public async Task ValidateCode_UsesDedicatedAllDiagnosticsWithoutChangingCountsOrFailures()
     {
         await using var fixture = await TestWorkspace.CreateAsync();
         var diagnostics = fixture.Provider.GetRequiredService<IDiagnosticsQueryService>();
-        var legacy = fixture.Provider.GetRequiredService<IAnalysisService>();
+        var validation = fixture.Provider.GetRequiredService<IValidateCodeQueryService>();
         foreach (var filePath in new[] { null, fixture.PathFor("AErrors.cs"), fixture.PathFor("Types.cs") })
         {
             var expected = await diagnostics.GetDiagnosticsAsync(new(fixture.ProjectPath, filePath, "All"));
-            var actual = await legacy.ValidateCodeAsync(new(fixture.ProjectPath, filePath));
+            var actual = await validation.ValidateCodeAsync(new(fixture.ProjectPath, filePath));
             Assert.Null(actual.FailureReason);
             Assert.Equal(expected.Diagnostics, actual.Diagnostics);
             Assert.Equal(expected.Diagnostics.Count(static diagnostic => diagnostic.Severity == "Error"), actual.ErrorCount);
@@ -197,7 +201,7 @@ public sealed class AnalysisQueryIntegrationTests
 
         var missingPath = fixture.PathFor("Absent.cs");
         var failed = await diagnostics.GetDiagnosticsAsync(new(fixture.ProjectPath, missingPath, "All"));
-        var invalid = await legacy.ValidateCodeAsync(new(fixture.ProjectPath, missingPath));
+        var invalid = await validation.ValidateCodeAsync(new(fixture.ProjectPath, missingPath));
         Assert.NotNull(failed.FailureReason);
         Assert.False(invalid.IsValid);
         Assert.Equal(0, invalid.ErrorCount);
