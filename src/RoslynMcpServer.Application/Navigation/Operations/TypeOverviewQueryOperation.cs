@@ -10,7 +10,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the TypeOverview query through the shared query pipeline.</summary>
+/// <summary>Validates the source position before lookup and preserves resolved-type context in query errors.</summary>
 public sealed class TypeOverviewQueryOperation(
     ITypeOverviewQueryDataProvider dataProvider,
     ILogger<TypeOverviewQueryOperation> logger) : QueryOperationBase<GetTypeOverviewRequest, GetTypeOverviewResult, NavigationQueryError>(logger)

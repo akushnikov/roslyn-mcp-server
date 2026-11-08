@@ -7,7 +7,7 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects TypeOverview pipeline outcomes into the public result contract.</summary>
+/// <summary>Projects type overview outcomes while preserving successful payloads and contextual failures.</summary>
 public sealed class TypeOverviewQueryService(TypeOverviewQueryOperation operation) : ITypeOverviewQueryService
 {
     /// <inheritdoc />
