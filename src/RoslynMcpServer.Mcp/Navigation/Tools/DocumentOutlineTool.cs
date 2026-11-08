@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns a declaration outline for a source file in a loaded solution.
 /// </summary>
 [McpServerToolType]
-internal sealed class DocumentOutlineTool(INavigationService navigationService)
+internal sealed class DocumentOutlineTool(IDocumentOutlineQueryService documentOutlineQueryService)
 {
     /// <summary>
     /// Returns top-level and nested declarations for a source document.
@@ -21,7 +21,7 @@ internal sealed class DocumentOutlineTool(INavigationService navigationService)
         [Description("Absolute path to a previously loaded .sln, .slnx, or .csproj file.")] string solutionPath,
         [Description("Absolute path to a source file that belongs to the loaded solution.")] string filePath,
         CancellationToken cancellationToken = default)
-        => navigationService.GetDocumentOutlineAsync(
+        => documentOutlineQueryService.GetDocumentOutlineAsync(
             new GetDocumentOutlineRequest(solutionPath, filePath),
             cancellationToken);
 }
