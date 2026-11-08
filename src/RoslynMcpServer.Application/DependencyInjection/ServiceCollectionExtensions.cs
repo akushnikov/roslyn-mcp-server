@@ -24,8 +24,6 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IServerInfoService, ServerInfoService>();
-        services.AddSingleton<IServerDiagnosticsService, ServerDiagnosticsService>();
         services.AddSingleton<ServerInfoQueryOperation>();
         services.AddSingleton<IServerInfoQueryService, ServerInfoQueryService>();
         services.AddSingleton<DiagnoseQueryOperation>();
