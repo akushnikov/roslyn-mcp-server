@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Analysis.Tools;
 /// Returns a compatibility check between two resolved types.
 /// </summary>
 [McpServerToolType]
-internal sealed class TypeCompatibilityTool(IAnalysisService analysisService)
+internal sealed class TypeCompatibilityTool(ITypeCompatibilityQueryService queryService)
 {
     /// <summary>
     /// Resolves source and target types at the requested file positions and returns Roslyn conversion compatibility information.
@@ -26,7 +26,7 @@ internal sealed class TypeCompatibilityTool(IAnalysisService analysisService)
         [Description("1-based line number of the target type location.")] int targetLine,
         [Description("1-based column number of the target type location.")] int targetColumn,
         CancellationToken cancellationToken = default)
-        => analysisService.CheckTypeCompatibilityAsync(
+        => queryService.CheckTypeCompatibilityAsync(
             new CheckTypeCompatibilityRequest(
                 solutionPath,
                 sourceFilePath,
