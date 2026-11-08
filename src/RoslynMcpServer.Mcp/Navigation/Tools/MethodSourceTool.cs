@@ -10,7 +10,7 @@ namespace RoslynMcpServer.Mcp.Navigation.Tools;
 /// Returns source text for the callable member resolved at a specific source position.
 /// </summary>
 [McpServerToolType]
-internal sealed class MethodSourceTool(INavigationService navigationService)
+internal sealed class MethodSourceTool(IMethodSourceQueryService methodSourceQueryService)
 {
     /// <summary>
     /// Resolves the callable member at the requested file position and returns its source span and source text.
@@ -23,7 +23,7 @@ internal sealed class MethodSourceTool(INavigationService navigationService)
         [Description("1-based line number of the target symbol location.")] int line,
         [Description("1-based column number of the target symbol location.")] int column,
         CancellationToken cancellationToken = default)
-        => navigationService.GetMethodSourceAsync(
+        => methodSourceQueryService.GetMethodSourceAsync(
             new GetMethodSourceRequest(solutionPath, filePath, line, column),
             cancellationToken);
 }
