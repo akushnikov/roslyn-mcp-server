@@ -7,7 +7,9 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation;
 
-/// <summary>Projects DocumentOutline pipeline outcomes into the public result contract.</summary>
+/// <summary>
+/// Projects document-outline outcomes while preserving successful hierarchies and contextual failure paths.
+/// </summary>
 public sealed class DocumentOutlineQueryService(DocumentOutlineQueryOperation operation) : IDocumentOutlineQueryService
 {
     /// <inheritdoc />

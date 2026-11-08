@@ -10,7 +10,9 @@ using RoslynMcpServer.Application.QueryPipeline;
 
 namespace RoslynMcpServer.Application.Navigation.Operations;
 
-/// <summary>Executes the DocumentOutline query through the shared query pipeline.</summary>
+/// <summary>
+/// Validates document paths before provider access and preserves available file context in typed failures.
+/// </summary>
 public sealed class DocumentOutlineQueryOperation(
     IDocumentOutlineQueryDataProvider dataProvider,
     ILogger<DocumentOutlineQueryOperation> logger) : QueryOperationBase<GetDocumentOutlineRequest, GetDocumentOutlineResult, DocumentQueryError>(logger)
