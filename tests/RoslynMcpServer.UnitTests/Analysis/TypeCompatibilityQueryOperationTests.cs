@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using OneOf;
-using RoslynMcpServer.Abstractions.Analysis.Models;
 using RoslynMcpServer.Abstractions.Analysis.Requests;
 using RoslynMcpServer.Abstractions.Analysis.Results;
 using RoslynMcpServer.Abstractions.Analysis.Services;
