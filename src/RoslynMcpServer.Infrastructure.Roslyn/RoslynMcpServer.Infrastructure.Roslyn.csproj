@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RoslynMcpServer.Abstractions\RoslynMcpServer.Abstractions.csproj" />
-    <ProjectReference Include="..\RoslynMcpServer.Domain\RoslynMcpServer.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
